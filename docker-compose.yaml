@@ -1,0 +1,16 @@
+services:
+  postgres:
+    # docker exec -it strava-edit-bot-postgres psql -U dbuser -d strava_edit_bot
+    image: postgres:18
+    container_name: strava-edit-bot-postgres
+    environment:
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: strongpassword
+      POSTGRES_DB: strava_edit_bot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/docker/volumes/strava-edit-bot_postgres_data/_data
+
+volumes:
+  postgres_data:
