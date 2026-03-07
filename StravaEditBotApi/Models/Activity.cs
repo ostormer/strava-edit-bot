@@ -31,7 +31,8 @@ public class Activity
         string activitySport,
         DateTime startTime,
         double distance,
-        TimeSpan elapsedTime)
+        TimeSpan elapsedTime
+    )
     {
         Name = name;
         Description = description;

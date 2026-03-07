@@ -2,8 +2,7 @@ namespace StravaEditBotApi.DTOs;
 
 using System.ComponentModel.DataAnnotations;
 
-public record CreateActivityDto
-(
+public record CreateActivityDto(
     [Required] string Name,
     string Description,
     [Required] string ActivitySport,

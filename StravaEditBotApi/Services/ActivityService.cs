@@ -1,20 +1,18 @@
 namespace StravaEditBotApi.Services;
 
-using StravaEditBotApi.Models;
-using StravaEditBotApi.DTOs;
-using StravaEditBotApi.Data;
 using Microsoft.EntityFrameworkCore;
+using StravaEditBotApi.Data;
+using StravaEditBotApi.DTOs;
+using StravaEditBotApi.Models;
 
 public class ActivityService(AppDbContext context) : IActivityService
 {
     private readonly AppDbContext _context = context;
 
-
     public async Task<IEnumerable<Activity>> GetAllAsync() =>
         await _context.Activities.ToListAsync();
 
-    public async Task<Activity?> GetByIdAsync(int id) =>
-        await _context.Activities.FindAsync(id);
+    public async Task<Activity?> GetByIdAsync(int id) => await _context.Activities.FindAsync(id);
 
     public async Task<Activity> CreateAsync(CreateActivityDto dto)
     {
@@ -35,7 +33,8 @@ public class ActivityService(AppDbContext context) : IActivityService
     public async Task<bool> UpdateAsync(int id, CreateActivityDto dto)
     {
         var existing = await _context.Activities.FindAsync(id);
-        if (existing is null) return false;
+        if (existing is null)
+            return false;
 
         existing.Name = dto.Name;
         existing.Description = dto.Description;
@@ -51,7 +50,8 @@ public class ActivityService(AppDbContext context) : IActivityService
     public async Task<bool> DeleteAsync(int id)
     {
         var existing = await _context.Activities.FindAsync(id);
-        if (existing is null) return false;
+        if (existing is null)
+            return false;
 
         _context.Activities.Remove(existing);
         await _context.SaveChangesAsync();

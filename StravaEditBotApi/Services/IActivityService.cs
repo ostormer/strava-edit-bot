@@ -3,7 +3,6 @@ using StravaEditBotApi.Models;
 
 namespace StravaEditBotApi.Services;
 
-
 public interface IActivityService
 {
     Task<IEnumerable<Activity>> GetAllAsync();
