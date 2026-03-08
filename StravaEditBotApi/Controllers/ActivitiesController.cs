@@ -15,10 +15,15 @@ public class ActivitiesController(
     private readonly IActivityService _activityService = activityService;
     private readonly ILogger<ActivitiesController> _logger = logger;
 
+    [HttpGet("test-error")]
+    public IActionResult TestError()
+    {
+        throw new InvalidOperationException("This is a test exception");
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        await Task.Delay(500); // Simulate some latency
         var activities = await _activityService.GetAllAsync();
         return Ok(activities);
     }

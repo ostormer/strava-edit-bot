@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StravaEditBotApi.Data;
+using StravaEditBotApi.Middleware;
 using StravaEditBotApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,8 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Custom services
 builder.Services.AddScoped<IActivityService, ActivityService>();
@@ -21,6 +24,7 @@ builder.Services.AddScoped<IActivityService, ActivityService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
