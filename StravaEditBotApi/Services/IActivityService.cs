@@ -8,6 +8,6 @@ public interface IActivityService
     Task<IEnumerable<Activity>> GetAllAsync();
     Task<Activity?> GetByIdAsync(int id);
     Task<Activity> CreateAsync(CreateActivityDto dto);
-    Task<bool> UpdateAsync(int id, CreateActivityDto dto);
+    Task<bool> UpdateAsync(int id, UpdateActivityDto dto);
     Task<bool> DeleteAsync(int id);
 }

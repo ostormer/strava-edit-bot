@@ -5,6 +5,7 @@ using StravaEditBotApi.DTOs;
 using StravaEditBotApi.Models;
 
 namespace StravaEditBotApi.Services;
+
 public class ActivityService(AppDbContext context) : IActivityService
 {
     private readonly AppDbContext _context = context;
@@ -30,7 +31,7 @@ public class ActivityService(AppDbContext context) : IActivityService
         return Activity;
     }
 
-    public async Task<bool> UpdateAsync(int id, CreateActivityDto dto)
+    public async Task<bool> UpdateAsync(int id, UpdateActivityDto dto)
     {
         var existing = await _context.Activities.FindAsync(id);
         if (existing is null)
@@ -38,12 +39,30 @@ public class ActivityService(AppDbContext context) : IActivityService
             return false;
         }
 
-        existing.Name = dto.Name;
-        existing.Description = dto.Description;
-        existing.ActivitySport = dto.ActivitySport;
-        existing.StartTime = dto.StartTime;
-        existing.Distance = dto.Distance;
-        existing.ElapsedTime = dto.ElapsedTime;
+        if (dto.Name is not null)
+        {
+            existing.Name = dto.Name;
+        }
+        if (dto.Description is not null)
+        {
+            existing.Description = dto.Description;
+        }
+        if (dto.ActivitySport is not null)
+        {
+            existing.ActivitySport = dto.ActivitySport;
+        }
+        if (dto.StartTime.HasValue)
+        {
+            existing.StartTime = dto.StartTime.Value;
+        }
+        if (dto.Distance.HasValue)
+        {
+            existing.Distance = dto.Distance.Value;
+        }
+        if (dto.ElapsedTime.HasValue)
+        {
+            existing.ElapsedTime = dto.ElapsedTime.Value;
+        }
 
         await _context.SaveChangesAsync();
         return true;

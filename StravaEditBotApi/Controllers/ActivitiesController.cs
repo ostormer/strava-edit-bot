@@ -47,7 +47,7 @@ public class ActivitiesController(
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutAsync(int id, [FromBody] CreateActivityDto dto)
+    public async Task<IActionResult> PutAsync(int id, [FromBody] UpdateActivityDto dto)
     {
         bool updated = await _activityService.UpdateAsync(id, dto);
         if (!updated)

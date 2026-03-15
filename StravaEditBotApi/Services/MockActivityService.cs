@@ -58,7 +58,7 @@ public class MockActivityService : IActivityService
         return await Task.FromResult(newActivity);
     }
 
-    public async Task<bool> UpdateAsync(int id, CreateActivityDto dto)
+    public async Task<bool> UpdateAsync(int id, UpdateActivityDto dto)
     {
         var existing = await GetByIdAsync(id);
         if (existing is null)
@@ -66,20 +66,30 @@ public class MockActivityService : IActivityService
             return await Task.FromResult(false);
         }
 
-        _activities.Remove(existing);
-        _activities.Add(
-            new Activity(
-                dto.Name,
-                dto.Description,
-                dto.ActivitySport,
-                dto.StartTime,
-                dto.Distance,
-                dto.ElapsedTime
-            )
-            {
-                Id = id,
-            }
-        );
+        if (dto.Name is not null)
+        {
+            existing.Name = dto.Name;
+        }
+        if (dto.Description is not null)
+        {
+            existing.Description = dto.Description;
+        }
+        if (dto.ActivitySport is not null)
+        {
+            existing.ActivitySport = dto.ActivitySport;
+        }
+        if (dto.StartTime.HasValue)
+        {
+            existing.StartTime = dto.StartTime.Value;
+        }
+        if (dto.Distance.HasValue)
+        {
+            existing.Distance = dto.Distance.Value;
+        }
+        if (dto.ElapsedTime.HasValue)
+        {
+            existing.ElapsedTime = dto.ElapsedTime.Value;
+        }
 
         return await Task.FromResult(true);
     }
