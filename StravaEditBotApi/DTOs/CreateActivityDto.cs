@@ -1,12 +1,10 @@
 namespace StravaEditBotApi.DTOs;
 
-using System.ComponentModel.DataAnnotations;
-
 public record CreateActivityDto(
-    [Required] string Name,
+    string Name,
     string Description,
-    [Required] string ActivitySport,
+    string ActivitySport,
     DateTime StartTime,
-    [Range(0, 1000)] double Distance,
+    double Distance,
     TimeSpan ElapsedTime
 );

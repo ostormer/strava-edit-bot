@@ -22,14 +22,14 @@ public class ActivitiesController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAllAsync()
     {
         var activities = await _activityService.GetAllAsync();
         return Ok(activities);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetByIdAsync(int id)
     {
         var activity = await _activityService.GetByIdAsync(id);
         if (activity == null)
@@ -40,28 +40,32 @@ public class ActivitiesController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateActivityDto dto)
+    public async Task<IActionResult> CreateAsync([FromBody] CreateActivityDto dto)
     {
         var created = await _activityService.CreateAsync(dto);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = created.Id }, created);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, [FromBody] CreateActivityDto dto)
+    public async Task<IActionResult> PutAsync(int id, [FromBody] CreateActivityDto dto)
     {
-        var updated = await _activityService.UpdateAsync(id, dto);
+        bool updated = await _activityService.UpdateAsync(id, dto);
         if (!updated)
+        {
             return NotFound($"Activity with ID {id} not found.");
+        }
 
         return NoContent();
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> DeleteAsync(int id)
     {
-        var deleted = await _activityService.DeleteAsync(id);
+        bool deleted = await _activityService.DeleteAsync(id);
         if (!deleted)
+        {
             return NotFound($"Activity with ID {id} not found.");
+        }
 
         return NoContent();
     }

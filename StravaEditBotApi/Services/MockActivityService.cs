@@ -1,7 +1,8 @@
-namespace StravaEditBotApi.Services;
 
 using StravaEditBotApi.DTOs;
 using StravaEditBotApi.Models;
+
+namespace StravaEditBotApi.Services;
 
 public class MockActivityService : IActivityService
 {
@@ -39,7 +40,7 @@ public class MockActivityService : IActivityService
 
     public async Task<Activity> CreateAsync(CreateActivityDto dto)
     {
-        var newId = _activities.Count > 0 ? _activities.Max(a => a.Id) + 1 : 1;
+        int newId = _activities.Count > 0 ? _activities.Max(a => a.Id) + 1 : 1;
 
         var newActivity = new Activity(
             dto.Name,
@@ -61,7 +62,9 @@ public class MockActivityService : IActivityService
     {
         var existing = await GetByIdAsync(id);
         if (existing is null)
+        {
             return await Task.FromResult(false);
+        }
 
         _activities.Remove(existing);
         _activities.Add(
@@ -85,7 +88,9 @@ public class MockActivityService : IActivityService
     {
         var existing = await GetByIdAsync(id);
         if (existing is null)
+        {
             return await Task.FromResult(false);
+        }
 
         _activities.Remove(existing);
         return await Task.FromResult(true);

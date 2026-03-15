@@ -1,7 +1,7 @@
-namespace StravaEditBotApi.Models;
 
 using System.ComponentModel.DataAnnotations;
 
+namespace StravaEditBotApi.Models;
 public class Activity
 {
     public int Id { get; set; }

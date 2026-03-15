@@ -1,10 +1,10 @@
-namespace StravaEditBotApi.Services;
 
 using Microsoft.EntityFrameworkCore;
 using StravaEditBotApi.Data;
 using StravaEditBotApi.DTOs;
 using StravaEditBotApi.Models;
 
+namespace StravaEditBotApi.Services;
 public class ActivityService(AppDbContext context) : IActivityService
 {
     private readonly AppDbContext _context = context;
@@ -34,7 +34,9 @@ public class ActivityService(AppDbContext context) : IActivityService
     {
         var existing = await _context.Activities.FindAsync(id);
         if (existing is null)
+        {
             return false;
+        }
 
         existing.Name = dto.Name;
         existing.Description = dto.Description;
@@ -51,7 +53,9 @@ public class ActivityService(AppDbContext context) : IActivityService
     {
         var existing = await _context.Activities.FindAsync(id);
         if (existing is null)
+        {
             return false;
+        }
 
         _context.Activities.Remove(existing);
         await _context.SaveChangesAsync();
