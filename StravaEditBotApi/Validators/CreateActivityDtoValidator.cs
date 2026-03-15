@@ -22,7 +22,7 @@ public class CreateActivityDtoValidator : AbstractValidator<CreateActivityDto>
                 .WithMessage($"Activity sport must be one of: {SportTypes.FormattedList}.");
 
         RuleFor(x => x.StartTime)
-            .LessThanOrEqualTo(DateTime.Now)
+            .Must(startTime => startTime <= DateTime.UtcNow)
                 .WithMessage("Start time cannot be in the future.");
 
         RuleFor(x => x.Distance)
