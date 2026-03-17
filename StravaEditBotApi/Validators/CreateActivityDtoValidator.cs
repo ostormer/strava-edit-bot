@@ -29,6 +29,6 @@ public class CreateActivityDtoValidator : AbstractValidator<CreateActivityDto>
             .InclusiveBetween(0, 1000).WithMessage("Distance must be between 0 and 1000 kilometers.");
 
         RuleFor(x => x.ElapsedTime)
-            .GreaterThanOrEqualTo(TimeSpan.Zero).WithMessage("Elapsed time must be non-negative.");
+            .GreaterThan(TimeSpan.Zero).WithMessage("Elapsed time must be non-negative.");
     }
 }
