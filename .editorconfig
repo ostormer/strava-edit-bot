@@ -266,3 +266,10 @@ trim_trailing_whitespace = false
 # Shell scripts (LF line endings)
 [*.sh]
 end_of_line = lf
+
+# Test files — relax rules that conflict with standard xUnit conventions.
+# - Async suffix: test methods are never called by other code, so the suffix adds noise.
+# - Pascal case: the Method_Scenario_Expected naming pattern uses underscores intentionally.
+[StravaEditBotApi.Tests/**/*.cs]
+dotnet_naming_rule.async_methods_should_end_with_async.severity = none
+dotnet_naming_rule.non_field_members_should_be_pascal_case.severity = none
