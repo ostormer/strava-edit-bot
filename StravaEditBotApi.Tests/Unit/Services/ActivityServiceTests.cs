@@ -172,7 +172,7 @@ public class ActivityServiceTests : IDisposable
         var result = await _sut.GetByIdAsync(seeded.Id);
 
         result.Should().NotBeNull();
-        result!.Name.Should().Be("Find Me");
+        result.Name.Should().Be("Find Me");
     }
 
     [Fact]
