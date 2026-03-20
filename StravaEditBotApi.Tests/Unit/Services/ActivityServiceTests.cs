@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using StravaEditBotApi.Data;
 using StravaEditBotApi.DTOs;
@@ -7,12 +6,14 @@ using StravaEditBotApi.Services;
 
 namespace StravaEditBotApi.Tests.Unit.Services;
 
-public class ActivityServiceTests : IDisposable
+[TestFixture]
+public class ActivityServiceTests
 {
-    private readonly AppDbContext _context;
-    private readonly ActivityService _sut;
+    private AppDbContext _context = null!;
+    private ActivityService _sut = null!;
 
-    public ActivityServiceTests()
+    [SetUp]
+    public void Setup()
     {
         // Guid.NewGuid() ensures every test gets its own isolated database.
         // Without this, tests would share state and interfere with each other.
@@ -74,20 +75,20 @@ public class ActivityServiceTests : IDisposable
     // CreateAsync
     // ========================================================
 
-    [Fact]
+    [Test]
     public async Task CreateAsync_ValidDto_ReturnsActivityWithGeneratedId()
     {
         var dto = MakeCreateDto();
 
         var result = await _sut.CreateAsync(dto);
 
-        result.Id.Should().BeGreaterThan(0);
-        result.Name.Should().Be("Morning Run");
-        result.ActivitySport.Should().Be("Run");
-        result.Distance.Should().Be(5.0);
+        Assert.That(result.Id, Is.GreaterThan(0));
+        Assert.That(result.Name, Is.EqualTo("Morning Run"));
+        Assert.That(result.ActivitySport, Is.EqualTo("Run"));
+        Assert.That(result.Distance, Is.EqualTo(5.0));
     }
 
-    [Fact]
+    [Test]
     public async Task CreateAsync_ValidDto_PersistsToDatabase()
     {
         var dto = MakeCreateDto(name: "Persisted Run");
@@ -98,20 +99,20 @@ public class ActivityServiceTests : IDisposable
         // This catches bugs where the service returns an object but
         // forgets to call SaveChangesAsync.
         var fromDb = await _context.Activities.FindAsync(created.Id);
-        fromDb.Should().NotBeNull();
-        fromDb!.Name.Should().Be("Persisted Run");
+        Assert.That(fromDb, Is.Not.Null);
+        Assert.That(fromDb!.Name, Is.EqualTo("Persisted Run"));
     }
 
-    [Fact]
+    [Test]
     public async Task CreateAsync_MultipleCalls_GeneratesUniqueIds()
     {
         var first = await _sut.CreateAsync(MakeCreateDto(name: "First"));
         var second = await _sut.CreateAsync(MakeCreateDto(name: "Second"));
 
-        first.Id.Should().NotBe(second.Id);
+        Assert.That(first.Id, Is.Not.EqualTo(second.Id));
     }
 
-    [Fact]
+    [Test]
     public async Task CreateAsync_MapsAllFieldsCorrectly()
     {
         var startTime = DateTime.UtcNow.AddHours(-2);
@@ -128,27 +129,27 @@ public class ActivityServiceTests : IDisposable
         var result = await _sut.CreateAsync(dto);
 
         // Verify every field was mapped from DTO to entity
-        result.Name.Should().Be("Full Map Test");
-        result.Description.Should().Be("Testing all fields");
-        result.ActivitySport.Should().Be("Ride");
-        result.StartTime.Should().Be(startTime);
-        result.Distance.Should().Be(25.5);
-        result.ElapsedTime.Should().Be(elapsed);
+        Assert.That(result.Name, Is.EqualTo("Full Map Test"));
+        Assert.That(result.Description, Is.EqualTo("Testing all fields"));
+        Assert.That(result.ActivitySport, Is.EqualTo("Ride"));
+        Assert.That(result.StartTime, Is.EqualTo(startTime));
+        Assert.That(result.Distance, Is.EqualTo(25.5));
+        Assert.That(result.ElapsedTime, Is.EqualTo(elapsed));
     }
 
     // ========================================================
     // GetAllAsync
     // ========================================================
 
-    [Fact]
+    [Test]
     public async Task GetAllAsync_EmptyDatabase_ReturnsEmptyCollection()
     {
         var result = await _sut.GetAllAsync();
 
-        result.Should().BeEmpty();
+        Assert.That(result, Is.Empty);
     }
 
-    [Fact]
+    [Test]
     public async Task GetAllAsync_WithActivities_ReturnsAll()
     {
         await SeedActivityAsync("Run 1");
@@ -157,37 +158,40 @@ public class ActivityServiceTests : IDisposable
 
         var result = await _sut.GetAllAsync();
 
-        result.Should().HaveCount(3);
+        Assert.That(result.Count, Is.EqualTo(3));
+        Assert.That(result.Any(a => a.Name == "Run 1"), Is.True);
+        Assert.That(result.Any(a => a.Name == "Run 2"), Is.True);
+        Assert.That(result.Any(a => a.Name == "Run 3"), Is.True);
     }
 
     // ========================================================
     // GetByIdAsync
     // ========================================================
 
-    [Fact]
+    [Test]
     public async Task GetByIdAsync_ExistingId_ReturnsActivity()
     {
         var seeded = await SeedActivityAsync("Find Me");
 
         var result = await _sut.GetByIdAsync(seeded.Id);
 
-        result.Should().NotBeNull();
-        result.Name.Should().Be("Find Me");
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Name, Is.EqualTo("Find Me"));
     }
 
-    [Fact]
+    [Test]
     public async Task GetByIdAsync_NonExistentId_ReturnsNull()
     {
         var result = await _sut.GetByIdAsync(999);
 
-        result.Should().BeNull();
+        Assert.That(result, Is.Null);
     }
 
     // ========================================================
     // UpdateAsync
     // ========================================================
 
-    [Fact]
+    [Test]
     public async Task UpdateAsync_ExistingId_ReturnsTrueAndUpdatesFields()
     {
         var seeded = await SeedActivityAsync("Original Name");
@@ -199,16 +203,17 @@ public class ActivityServiceTests : IDisposable
         bool result = await _sut.UpdateAsync(seeded.Id, updateDto);
 
         // Verify return value
-        result.Should().BeTrue();
+        Assert.That(result, Is.True);
 
         // Verify the database was actually updated
         var fromDb = await _context.Activities.FindAsync(seeded.Id);
-        fromDb!.Name.Should().Be("Updated Name");
-        fromDb.ActivitySport.Should().Be("Ride");
-        fromDb.Distance.Should().Be(42.0);
+        Assert.That(fromDb, Is.Not.Null);
+        Assert.That(fromDb!.Name, Is.EqualTo("Updated Name"));
+        Assert.That(fromDb.ActivitySport, Is.EqualTo("Ride"));
+        Assert.That(fromDb.Distance, Is.EqualTo(42.0));
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateAsync_ExistingId_DoesNotChangeId()
     {
         var seeded = await SeedActivityAsync();
@@ -218,21 +223,21 @@ public class ActivityServiceTests : IDisposable
         await _sut.UpdateAsync(originalId, updateDto);
 
         var fromDb = await _context.Activities.FindAsync(originalId);
-        fromDb.Should().NotBeNull();
-        fromDb!.Id.Should().Be(originalId);
+        Assert.That(fromDb, Is.Not.Null);
+        Assert.That(fromDb!.Id, Is.EqualTo(originalId));
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateAsync_NonExistentId_ReturnsFalse()
     {
         var updateDto = MakeUpdateDto(name: "Won't Update");
 
         bool result = await _sut.UpdateAsync(999, updateDto);
 
-        result.Should().BeFalse();
+        Assert.That(result, Is.False);
     }
 
-    [Fact]
+    [Test]
     public async Task UpdateAsync_NonExistentId_DoesNotCreateActivity()
     {
         var updateDto = MakeUpdateDto(name: "Ghost");
@@ -240,34 +245,34 @@ public class ActivityServiceTests : IDisposable
         await _sut.UpdateAsync(999, updateDto);
 
         var all = await _context.Activities.ToListAsync();
-        all.Should().BeEmpty();
+        Assert.That(all, Is.Empty);
     }
 
     // ========================================================
     // DeleteAsync
     // ========================================================
 
-    [Fact]
+    [Test]
     public async Task DeleteAsync_ExistingId_ReturnsTrueAndRemoves()
     {
         var seeded = await SeedActivityAsync();
 
         bool result = await _sut.DeleteAsync(seeded.Id);
 
-        result.Should().BeTrue();
+        Assert.That(result, Is.True);
         var fromDb = await _context.Activities.FindAsync(seeded.Id);
-        fromDb.Should().BeNull();
+        Assert.That(fromDb, Is.Null);
     }
 
-    [Fact]
+    [Test]
     public async Task DeleteAsync_NonExistentId_ReturnsFalse()
     {
         bool result = await _sut.DeleteAsync(999);
 
-        result.Should().BeFalse();
+        Assert.That(result, Is.False);
     }
 
-    [Fact]
+    [Test]
     public async Task DeleteAsync_OnlyRemovesTargetActivity()
     {
         var keep = await SeedActivityAsync("Keep Me");
@@ -276,17 +281,17 @@ public class ActivityServiceTests : IDisposable
         await _sut.DeleteAsync(remove.Id);
 
         var remaining = await _context.Activities.ToListAsync();
-        remaining.Should().HaveCount(1);
-        remaining[0].Name.Should().Be("Keep Me");
+        Assert.That(remaining, Has.Count.EqualTo(1));
+        Assert.That(remaining[0].Name, Is.EqualTo("Keep Me"));
     }
 
     // ========================================================
     // Cleanup
     // ========================================================
 
-    public void Dispose()
+    [TearDown]
+    public void TearDown()
     {
         _context.Dispose();
-        GC.SuppressFinalize(this);
     }
 }
