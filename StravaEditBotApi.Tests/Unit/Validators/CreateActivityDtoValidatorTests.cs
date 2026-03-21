@@ -191,7 +191,7 @@ public class CreateActivityDtoValidatorTests
     [Test]
     public void Description_Null_ShouldPass()
     {
-        var dto = MakeValidDto(description: null!);
+        var dto = MakeValidDto(description: null);
 
         var result = _validator.TestValidate(dto);
 

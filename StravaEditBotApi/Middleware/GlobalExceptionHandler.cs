@@ -30,9 +30,15 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IHos
             Instance = httpContext.Request.Path,
         };
 
+        // Set status and content type before writing the body.
+        // WriteAsJsonAsync would override ContentType to "application/json",
+        // so we serialize manually to keep the RFC 9457 media type.
         httpContext.Response.StatusCode = problemDetails.Status.Value;
+        httpContext.Response.ContentType = "application/problem+json";
 
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await httpContext.Response.WriteAsync(
+            System.Text.Json.JsonSerializer.Serialize(problemDetails),
+            cancellationToken);
 
         // Return true = "I handled this exception, don't fall through"
         // Return false = "I can't handle this one, let the next handler try"

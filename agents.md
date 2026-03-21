@@ -217,6 +217,18 @@ dotnet ef database update --project StravaEditBotApi
 
 ---
 
+## Integration test setup notes
+
+`WebAppFactory` overrides the database by removing EF Core's service registrations and replacing them with InMemory. In EF Core 8+, `AddDbContext` registers **four** service types that must all be removed:
+- `IDbContextOptionsConfiguration<AppDbContext>` — the configuration action (the lambda); if left behind, EF applies both Npgsql and InMemory and throws
+- `DbContextOptions<AppDbContext>`
+- `DbContextOptions` — non-generic alias
+- `AppDbContext`
+
+See `StravaEditBotApi.Tests/Integration/WebAppFactory.cs` for the working pattern.
+
+---
+
 ## Known Areas for Improvement
 
 These are intentional learning tasks, not bugs to fix immediately:

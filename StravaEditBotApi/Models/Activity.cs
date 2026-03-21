@@ -9,7 +9,7 @@ public class Activity
     [Required]
     public string Name { get; set; } = default!;
 
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     [Required]
     public string ActivitySport { get; set; } = default!;
@@ -27,7 +27,7 @@ public class Activity
     // Optional convenience constructor
     public Activity(
         string name,
-        string description,
+        string? description,
         string activitySport,
         DateTime startTime,
         double distance,

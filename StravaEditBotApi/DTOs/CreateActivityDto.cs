@@ -2,7 +2,7 @@ namespace StravaEditBotApi.DTOs;
 
 public record CreateActivityDto(
     string Name,
-    string Description,
+    string? Description,
     string ActivitySport,
     DateTime StartTime,
     double Distance,
