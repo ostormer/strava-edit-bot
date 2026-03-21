@@ -14,7 +14,7 @@ public class WebAppFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             // In EF Core 8+, AddDbContext registers four service types:
-            //   1. IDbContextOptionsConfiguration<T>  — the configuration action lambda (UseNpgsql etc.)
+            //   1. IDbContextOptionsConfiguration<T>  — the configuration action lambda (UseSqlServer etc.)
             //   2. DbContextOptions<T>                — the built options object
             //   3. DbContextOptions                   — non-generic alias of the above
             //   4. AppDbContext                       — the context itself

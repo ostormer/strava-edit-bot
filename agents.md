@@ -24,7 +24,7 @@ When explaining concepts, Python analogies are welcome and useful. For example:
 | Layer | Technology |
 |---|---|
 | Framework | ASP.NET Core Web API (.NET 10) |
-| Database | PostgreSQL via Npgsql |
+| Database | SQL Server via `Microsoft.EntityFrameworkCore.SqlServer` |
 | ORM | Entity Framework Core 10 |
 | Validation | FluentValidation 12 (auto-validation via `AddFluentValidationAutoValidation`) |
 | API Docs | Swagger / OpenAPI (Swashbuckle + built-in `MapOpenApi`) |
@@ -33,6 +33,10 @@ When explaining concepts, Python analogies are welcome and useful. For example:
 ### Planned additions
 - React frontend (to be added later)
 - Strava OAuth integration
+- Entra ID authentication (Azure free tier: App Service + Azure SQL + Entra ID; managed identity for DB auth — no passwords in config)
+
+### Local development
+SQL Server runs in Docker. Connection string in `appsettings.Development.json` uses SA account (`Dev@Password1`). The `appsettings.json` base connection string uses `Trusted_Connection=True` for Azure (managed identity).
 
 ---
 
@@ -199,6 +203,12 @@ sub.DidNotReceive().DeleteAsync(999);
 ## Key Commands
 
 ```bash
+# Start local SQL Server (Docker)
+docker compose up -d
+
+# Stop local SQL Server
+docker compose down
+
 # Build
 dotnet build
 
@@ -220,7 +230,7 @@ dotnet ef database update --project StravaEditBotApi
 ## Integration test setup notes
 
 `WebAppFactory` overrides the database by removing EF Core's service registrations and replacing them with InMemory. In EF Core 8+, `AddDbContext` registers **four** service types that must all be removed:
-- `IDbContextOptionsConfiguration<AppDbContext>` — the configuration action (the lambda); if left behind, EF applies both Npgsql and InMemory and throws
+- `IDbContextOptionsConfiguration<AppDbContext>` — the configuration action (the lambda); if left behind, EF applies both SqlServer and InMemory and throws
 - `DbContextOptions<AppDbContext>`
 - `DbContextOptions` — non-generic alias
 - `AppDbContext`
@@ -236,5 +246,5 @@ These are intentional learning tasks, not bugs to fix immediately:
 1. Controllers currently return `Activity` entity objects directly — should use response DTOs
 2. No pagination on `GetAllAsync`
 3. No authentication/authorisation yet (needed before Strava OAuth integration)
-4. No integration tests (tests that spin up the real HTTP stack with `WebApplicationFactory`)
+4. ~~No integration tests (tests that spin up the real HTTP stack with `WebApplicationFactory`)~~ (done — 13 tests)
 5. ~~Existing tests use xUnit + Moq + FluentAssertions and should be migrated to NUnit + NSubstitute~~ (done)
