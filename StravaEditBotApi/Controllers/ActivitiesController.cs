@@ -1,10 +1,11 @@
-using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StravaEditBotApi.DTOs;
 using StravaEditBotApi.Services;
 
 namespace StravaEditBotApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/activities")]
 public class ActivitiesController(

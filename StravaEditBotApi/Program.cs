@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Web;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using StravaEditBotApi.Data;
@@ -6,6 +7,10 @@ using StravaEditBotApi.Middleware;
 using StravaEditBotApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Validates Entra ID JWT bearer tokens. Reads TenantId and ClientId from the AzureAd
+// config section — supplied via User Secrets locally, App Service env vars in Azure.
+builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -44,6 +49,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
