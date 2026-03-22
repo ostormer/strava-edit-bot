@@ -1,0 +1,26 @@
+meta {
+  name: Update Activity
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/activities/{{activityId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Morning Run (Updated)",
+    "description": "Updated description",
+    "activitySport": "Run",
+    "startTime": "2026-03-21T08:00:00Z",
+    "distance": 6.5,
+    "elapsedTime": "00:38:00"
+  }
+}
