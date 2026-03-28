@@ -2,7 +2,7 @@
 // Subscription-scoped so Bicep manages the resource group too.
 //
 // Deploy with:
-//   az deployment sub create --location norwayeast --template-file infra/main.bicep --parameters infra/environments/dev.bicepparam
+//   az deployment sub create --location norwayeast --template-file infrastructure/main.bicep --parameters infrastructure/environments/dev.bicepparam
 //
 // Note: --location is only where Azure stores deployment metadata; actual resources go to the location in the .bicepparam file.
 

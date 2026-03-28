@@ -130,7 +130,7 @@ az ad app show --id <appId> --query "api.oauth2PermissionScopes" -o json
 
 ## 5. Fill in the param file for this environment
 
-`infra/environments/dev.bicepparam`:
+`infrastructure/environments/dev.bicepparam`:
 ```
 param entraAppClientId = '<dev-app-registration-client-id>'
 ```
@@ -255,14 +255,14 @@ Run once to create the Azure resources before GitHub Actions takes over:
 # Dev
 az deployment sub create \
   --location norwayeast \
-  --template-file infra/main.bicep \
-  --parameters infra/environments/dev.bicepparam
+  --template-file infrastructure/main.bicep \
+  --parameters infrastructure/environments/dev.bicepparam
 
 # Prod (when ready — not needed until prod environment is set up)
 az deployment sub create \
   --location norwayeast \
-  --template-file infra/main.bicep \
-  --parameters infra/environments/prod.bicepparam
+  --template-file infrastructure/main.bicep \
+  --parameters infrastructure/environments/prod.bicepparam
 ```
 
 The `--location` flag is only where Azure stores the deployment metadata record —
@@ -311,8 +311,8 @@ against alternative regions to find one that works before updating the param fil
 ```bash
 az deployment sub validate \
   --location norwayeast \
-  --template-file infra/main.bicep \
-  --parameters infra/environments/dev.bicepparam \
+  --template-file infrastructure/main.bicep \
+  --parameters infrastructure/environments/dev.bicepparam \
   --parameters location=<region-to-test>
 ```
 
