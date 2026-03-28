@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StravaEditBotApi.Data;
 
@@ -12,6 +13,21 @@ public class WebAppFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Provide a JWT secret so TokenService works in tests (Jwt:Secret is not in appsettings.json).
+        builder.ConfigureAppConfiguration((_, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Secret"] = "integration-test-secret-key-must-be-at-least-32-chars-long!",
+            });
+        });
+
+        // Pin to Development so IsDevelopment() is true in Program.cs.
+        // This means the DevBypass auth handler is registered instead of JWT bearer,
+        // which avoids needing a Jwt:Secret in the test config.
+        // The TestAuthHandler below overrides the default scheme anyway.
+        builder.UseEnvironment("Development");
+
         builder.ConfigureServices(services =>
         {
             // In EF Core 8+, AddDbContext registers four service types:

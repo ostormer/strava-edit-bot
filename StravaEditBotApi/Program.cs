@@ -1,27 +1,55 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Web;
+using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using StravaEditBotApi.Data;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using StravaEditBotApi.Data;
 using StravaEditBotApi.Middleware;
+using StravaEditBotApi.Models;
 using StravaEditBotApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Registers UserManager<AppUser>, password hasher, validators, and EF stores.
+// AddIdentityCore (not AddIdentity) avoids setting cookie auth as the default scheme,
+// which would conflict with JWT bearer on an API.
+builder.Services.AddIdentityCore<AppUser>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<AppDbContext>();
+
 if (builder.Environment.IsDevelopment())
 {
-    // In Development, bypass Entra ID auth so endpoints can be hit without a real JWT.
+    // In Development, bypass auth entirely so endpoints can be hit without a real JWT.
     builder.Services.AddAuthentication("DevBypass")
         .AddScheme<AuthenticationSchemeOptions, DevBypassAuthenticationHandler>("DevBypass", null);
-    builder.Services.AddAuthorization();
 }
 else
 {
-    // Validates Entra ID JWT bearer tokens. Reads TenantId and ClientId from the AzureAd
-    // config section — supplied via User Secrets locally, App Service env vars in Azure.
-    builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration);
+    // In Production, validate JWTs we issued ourselves.
+    // The signing key lives in Azure Key Vault (or user secrets locally for non-dev environments).
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!))
+            };
+        });
 }
+
+builder.Services.AddAuthorization();
 
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -46,6 +74,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 // Custom services
 builder.Services.AddScoped<IActivityService, ActivityService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 var app = builder.Build();
 
