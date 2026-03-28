@@ -50,7 +50,7 @@ jobs:
 
   # ── Run tests with coverage ───────────────────────────────────────────────────
   test:
-    name: Test
+    name: Run tests with coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
