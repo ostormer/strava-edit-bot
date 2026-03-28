@@ -7,9 +7,9 @@ meta {
 get {
   url: {{baseUrl}}/api/activities
   body: none
-  auth: none
+  auth: bearer
 }
 
-vars:pre-request {
-  baseUrl: http://localhost:5247
+auth:bearer {
+  token: {{accessToken}}
 }
