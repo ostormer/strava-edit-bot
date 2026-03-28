@@ -29,6 +29,7 @@ permissions:
 
 env:
   DOTNET_VERSION: '10.x'
+  NODE_VERSION: '22'
 
 jobs:
   # ── Detect what changed ────────────────────────────────────────────────────────
@@ -87,9 +88,9 @@ jobs:
           path: coverage/
           retention-days: 7
 
-  # ── Build and package the app ─────────────────────────────────────────────────
+  # ── Build and package the API ─────────────────────────────────────────────────
   build:
-    name: Build
+    name: Build API
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -108,6 +109,46 @@ jobs:
         with:
           name: app
           path: app.zip
+          retention-days: 1
+
+  # ── Build the frontend ────────────────────────────────────────────────────────
+  # VITE_API_BASE_URL is a GitHub Actions variable (not secret) — URLs are not
+  # sensitive and get baked into the browser bundle anyway.
+  # Set it in: Settings → Environments → <env> → Variables
+  #
+  # Vite mode is derived from the GitHub environment:
+  #   dev  → --mode staging    (loads .env.staging)
+  #   prod → --mode production (loads .env.production)
+  build-ui:
+    name: Build UI
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: strava-edit-bot-ui/package-lock.json
+      - name: Install dependencies
+        working-directory: strava-edit-bot-ui
+        run: npm ci
+      - name: Resolve build script
+        id: build_script
+        run: |
+          case "${{ inputs.environment || 'dev' }}" in
+            prod) echo "script=build:production" >> $GITHUB_OUTPUT ;;
+            *)    echo "script=build:staging"    >> $GITHUB_OUTPUT ;;
+          esac
+      - name: Build
+        working-directory: strava-edit-bot-ui
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: npm run ${{ steps.build_script.outputs.script }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ui
+          path: strava-edit-bot-ui/dist
           retention-days: 1
 
   # ── Deploy Bicep infrastructure ───────────────────────────────────────────────
@@ -138,7 +179,7 @@ jobs:
             --parameters "infrastructure/environments/${ENV}.bicepparam" \
             --name "deploy-${ENV}-${{ github.run_id }}"
 
-  # ── Deploy app ────────────────────────────────────────────────────────────────
+  # ── Deploy API ────────────────────────────────────────────────────────────────
   # Always runs on push to main. Waits for infra if it ran; skips gracefully if not.
   # EF migrations run on app startup via MigrateAsync() using the managed identity.
   # App configuration secrets are pushed from GitHub environment secrets on every
@@ -149,7 +190,7 @@ jobs:
   #   JWT_ISSUER   — token issuer, e.g. https://strava-edit-bot-dev.azurewebsites.net
   #   JWT_AUDIENCE — token audience, e.g. https://strava-edit-bot-dev.azurewebsites.net
   deploy-app:
-    name: Deploy app (${{ inputs.environment || 'dev' }})
+    name: Deploy API (${{ inputs.environment || 'dev' }})
     needs: [build, deploy-infra]
     if: |
       always() &&
@@ -188,3 +229,36 @@ jobs:
               "Jwt__Secret=${{ secrets.JWT_SECRET }}" \
               "Jwt__Issuer=${{ secrets.JWT_ISSUER }}" \
               "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}"
+
+  # ── Deploy frontend ───────────────────────────────────────────────────────────
+  # Uses the SWA deployment token (not OIDC) — Static Web Apps has its own auth
+  # mechanism separate from the Azure RBAC used by the rest of the pipeline.
+  #
+  # Required GitHub environment secrets (Settings → Environments → dev → Secrets):
+  #   AZURE_STATIC_WEB_APPS_API_TOKEN — from: az staticwebapp secrets list
+  #       --name strava-edit-bot-dev-ui -g strava-edit-bot-dev-rg
+  #       --query "properties.apiKey" -o tsv
+  #
+  # Required GitHub environment variables (Settings → Environments → dev → Variables):
+  #   VITE_API_BASE_URL — e.g. https://strava-edit-bot-dev.azurewebsites.net
+  deploy-ui:
+    name: Deploy UI (${{ inputs.environment || 'dev' }})
+    needs: [build-ui, deploy-infra]
+    if: |
+      always() &&
+      needs.build-ui.result == 'success' &&
+      (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ui
+          path: ui-dist
+      - uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: ui-dist
+          skip_app_build: true
+          output_location: ''
