@@ -194,13 +194,14 @@ az ad app federated-credential create \
     "audiences": ["api://AzureADTokenExchange"]
   }'
 
-# Manual workflow_dispatch (triggers prod deployments)
+# Manual workflow_dispatch triggers (one credential per environment that will use
+# workflow_dispatch — add a prod credential here when prod is set up)
 az ad app federated-credential create \
   --id $GH_ACTIONS_APP_ID \
   --parameters '{
-    "name": "github-dispatch",
+    "name": "github-dispatch-dev",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:your-github-username/strava-edit-bot:environment:prod",
+    "subject": "repo:your-github-username/strava-edit-bot:environment:dev",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 ```
@@ -214,6 +215,35 @@ echo "AZURE_SUBSCRIPTION_ID: $SUBSCRIPTION_ID"
 ```
 
 Add them in GitHub: `Settings → Secrets and variables → Actions → New repository secret`
+
+### Create the GitHub environments
+
+The workflow uses GitHub Environments for scoped secrets and (later) protection rules.
+Create one environment per deployment target:
+
+`GitHub repo → Settings → Environments → New environment`
+
+- Name: `dev`
+
+When adding prod later, create a `prod` environment and configure protection rules
+(required reviewers, deployment branch restrictions) there.
+
+### App configuration secrets
+
+The deployed app needs `Jwt:Secret`, `Jwt:Issuer`, and `Jwt:Audience` at runtime.
+GitHub Actions pushes these to the App Service on every deploy, so GitHub is the
+single source of truth. Add them as environment secrets for each environment:
+
+`GitHub repo → Settings → Environments → dev → Add secret`
+
+| Secret | Example value |
+|---|---|
+| `JWT_SECRET` | `openssl rand -base64 64` (long random string) |
+| `JWT_ISSUER` | `https://strava-edit-bot-dev.azurewebsites.net` |
+| `JWT_AUDIENCE` | `https://strava-edit-bot-dev.azurewebsites.net` |
+
+To rotate a secret: update it in GitHub and re-run the deploy workflow — no Bicep
+changes needed.
 
 ---
 

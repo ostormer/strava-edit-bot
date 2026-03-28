@@ -1,0 +1,145 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          # prod will be added when the production environment is set up
+      force_infra:
+        description: 'Deploy infrastructure even without infra file changes'
+        required: false
+        default: false
+        type: boolean
+
+# Required for OIDC token exchange with Azure
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  DOTNET_VERSION: '10.x'
+
+jobs:
+  # ── Detect what changed ────────────────────────────────────────────────────────
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2  # paths-filter needs at least 2 commits to diff
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            infra:
+              - 'infrastructure/**'
+
+  # ── Build and package the app ─────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Publish
+        run: |
+          dotnet publish StravaEditBotApi/StravaEditBotApi.csproj \
+            -c Release \
+            -o ./publish
+      - name: Create deployment package
+        run: cd publish && zip -r ../app.zip .
+      - uses: actions/upload-artifact@v7
+        with:
+          name: app
+          path: app.zip
+          retention-days: 1
+
+  # ── Deploy Bicep infrastructure ───────────────────────────────────────────────
+  # Runs when infrastructure/** files change, or when manually triggered with
+  # force_infra=true (useful after an out-of-band infra change or first setup).
+  deploy-infra:
+    name: Deploy infrastructure (${{ inputs.environment || 'dev' }})
+    needs: changes
+    if: |
+      needs.changes.outputs.infra == 'true' ||
+      (github.event_name == 'workflow_dispatch' && inputs.force_infra)
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy Bicep
+        run: |
+          ENV="${{ inputs.environment || 'dev' }}"
+          az deployment sub create \
+            --location norwayeast \
+            --template-file infrastructure/main.bicep \
+            --parameters "infrastructure/environments/${ENV}.bicepparam" \
+            --name "deploy-${ENV}-${{ github.run_id }}"
+
+  # ── Deploy app ────────────────────────────────────────────────────────────────
+  # Always runs on push to main. Waits for infra if it ran; skips gracefully if not.
+  # EF migrations run on app startup via MigrateAsync() using the managed identity.
+  # App configuration secrets are pushed from GitHub environment secrets on every
+  # deploy so rotating a secret takes effect without touching infrastructure.
+  #
+  # Required GitHub environment secrets (Settings → Environments → dev → Secrets):
+  #   JWT_SECRET   — signing key (keep long and random, e.g. openssl rand -base64 64)
+  #   JWT_ISSUER   — token issuer, e.g. https://strava-edit-bot-dev.azurewebsites.net
+  #   JWT_AUDIENCE — token audience, e.g. https://strava-edit-bot-dev.azurewebsites.net
+  deploy-app:
+    name: Deploy app (${{ inputs.environment || 'dev' }})
+    needs: [build, deploy-infra]
+    if: |
+      always() &&
+      needs.build.result == 'success' &&
+      (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    steps:
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: app
+          path: .
+      - name: Deploy to App Service
+        run: |
+          ENV="${{ inputs.environment || 'dev' }}"
+          APP_NAME="strava-edit-bot-${ENV}"
+          az webapp deploy \
+            --resource-group "${APP_NAME}-rg" \
+            --name "${APP_NAME}" \
+            --src-path app.zip \
+            --type zip
+      - name: Push app configuration secrets
+        run: |
+          ENV="${{ inputs.environment || 'dev' }}"
+          APP_NAME="strava-edit-bot-${ENV}"
+          az webapp config appsettings set \
+            --resource-group "${APP_NAME}-rg" \
+            --name "${APP_NAME}" \
+            --settings \
+              "Jwt__Secret=${{ secrets.JWT_SECRET }}" \
+              "Jwt__Issuer=${{ secrets.JWT_ISSUER }}" \
+              "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}"

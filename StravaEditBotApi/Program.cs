@@ -78,6 +78,16 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 var app = builder.Build();
 
+// Apply any pending EF Core migrations on startup.
+// This runs using the app's managed identity, so no CI runner SQL access is needed.
+// Safe for single-instance deployments (App Service B1); for multi-instance or
+// blue/green deployments, move this to a dedicated pre-deployment step instead.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
