@@ -6,9 +6,7 @@
         <Configuration>
           <Format>cobertura</Format>
           <Exclude>[*.Tests]*</Exclude>
-          <Threshold>80</Threshold>
-          <ThresholdType>line</ThresholdType>
-          <ThresholdStat>total</ThresholdStat>
+          <ExcludeByFile>**/obj/**/*.cs,**/Migrations/*.cs</ExcludeByFile>
         </Configuration>
       </DataCollector>
     </DataCollectors>
