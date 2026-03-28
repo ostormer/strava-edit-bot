@@ -3,6 +3,8 @@ name: Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -19,10 +21,11 @@ on:
         default: false
         type: boolean
 
-# Required for OIDC token exchange with Azure
+# Required for OIDC token exchange with Azure and PR coverage comments
 permissions:
   id-token: write
   contents: read
+  pull-requests: write
 
 env:
   DOTNET_VERSION: '10.x'
@@ -45,9 +48,49 @@ jobs:
             infra:
               - 'infrastructure/**'
 
+  # ── Run tests with coverage ───────────────────────────────────────────────────
+  test:
+    name: Run tests with coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Run tests with coverage
+        run: |
+          dotnet test \
+            --collect "XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            --results-directory ./coverage
+      - name: Coverage summary and threshold check
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage/**/coverage.cobertura.xml
+          badge: true
+          fail_below_min: true
+          format: markdown
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '80 90'
+      - name: Post coverage comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: always() && github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: code-coverage-results.md
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
   # ── Build and package the app ─────────────────────────────────────────────────
   build:
     name: Build
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -74,8 +117,9 @@ jobs:
     name: Deploy infrastructure (${{ inputs.environment || 'dev' }})
     needs: changes
     if: |
-      needs.changes.outputs.infra == 'true' ||
-      (github.event_name == 'workflow_dispatch' && inputs.force_infra)
+      github.event_name != 'pull_request' &&
+      (needs.changes.outputs.infra == 'true' ||
+      (github.event_name == 'workflow_dispatch' && inputs.force_infra))
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     steps:
@@ -109,6 +153,7 @@ jobs:
     needs: [build, deploy-infra]
     if: |
       always() &&
+      github.event_name != 'pull_request' &&
       needs.build.result == 'success' &&
       (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
