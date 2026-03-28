@@ -208,3 +208,65 @@ FakesAssemblies/
 
 # JetBrains Rider
 *.sln.iml
+
+
+# ===================================== Frontend ======================================
+
+
+# Generated .gitignore file for: Node, TypeScript, JavaScript, React, macOS, Linux, Windows, npm, Vite
+# Created with FOSSA's DevOps Tools
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+.DS_Store
+dist/
+.cache/
+coverage/
+
+# TypeScript
+# Add TypeScript-specific ignores here
+
+# JavaScript
+# Add JavaScript-specific ignores here
+
+# React
+node_modules/
+build/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# npm
+# Add npm-specific ignores here
+s
+# Vite
+# Add Vite-specific ignores here
+
+# Common
+.DS_Store
+Thumbs.db
+*.log
+*.bak
+*.tmp
+*.swp
+*~
+
+# IDE and editor generated files
+.idea/
+*.sublime-*
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+
+
+# ================================== Infrastructure ======================================
+
+# Bicep infrastructure files:
+infrastructure/main.json
