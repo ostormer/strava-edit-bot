@@ -265,6 +265,8 @@ Thumbs.db
 .env.*.local
 
 
+strava-edit-bot-ui/.vite/
+
 
 # ================================== Infrastructure ======================================
 
