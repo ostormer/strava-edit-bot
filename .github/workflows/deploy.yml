@@ -269,6 +269,7 @@ jobs:
     needs: [build-ui, deploy-infra]
     if: |
       always() &&
+      github.event_name != 'pull_request' &&
       needs.build-ui.result == 'success' &&
       (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     runs-on: ubuntu-latest
