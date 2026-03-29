@@ -20,6 +20,7 @@ param identityClientId string     // client ID of the managed identity
 param sqlServerFqdn string
 param databaseName string
 param entraAppClientId string     // App Registration client ID (for JWT validation)
+param corsAllowedOrigins string  // SWA origin, e.g. https://icy-ocean-abc.azurestaticapps.net
 
 var tenantId = tenant().tenantId
 
@@ -73,6 +74,12 @@ resource app 'Microsoft.Web/sites@2025-03-01' = {
         {
           name: 'AzureAd__ClientId'
           value: entraAppClientId
+        }
+        {
+          // Cors__AllowedOrigins maps to Cors:AllowedOrigins in IConfiguration.
+          // Value is the SWA origin, derived from the SWA module output in main.bicep.
+          name: 'Cors__AllowedOrigins'
+          value: corsAllowedOrigins
         }
       ]
 

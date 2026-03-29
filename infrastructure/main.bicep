@@ -23,6 +23,9 @@ param location string
 @description('Client ID of the Entra ID App Registration for this environment.')
 param entraAppClientId string
 
+@description('Azure region for the Static Web App resource. Must be a supported SWA region — norwayeast is not supported. Content is served globally via CDN regardless of this value.')
+param swaLocation string = 'westeurope'
+
 // ── Resource group ────────────────────────────────────────────────────────────
 
 resource rg 'Microsoft.Resources/resourceGroups@2025-04-01' = {
@@ -38,6 +41,7 @@ var planName      = '${prefix}-plan'
 var webAppName    = prefix
 var sqlServerName = '${prefix}-sql'   // must be globally unique in Azure
 var databaseName  = '${prefix}-db'
+var swaName       = '${prefix}-ui'
 
 // ── Modules ───────────────────────────────────────────────────────────────────
 
@@ -62,6 +66,15 @@ module sql 'modules/sql.bicep' = {
   }
 }
 
+module staticwebapp 'modules/staticwebapp.bicep' = {
+  name: 'deploy-staticwebapp'
+  scope: rg
+  params: {
+    name: swaName
+    location: swaLocation
+  }
+}
+
 module appservice 'modules/appservice.bicep' = {
   name: 'deploy-appservice'
   scope: rg
@@ -74,6 +87,7 @@ module appservice 'modules/appservice.bicep' = {
     sqlServerFqdn: sql.outputs.sqlServerFqdn
     databaseName: databaseName
     entraAppClientId: entraAppClientId
+    corsAllowedOrigins: 'https://${staticwebapp.outputs.defaultHostname}'
   }
 }
 
@@ -81,3 +95,4 @@ module appservice 'modules/appservice.bicep' = {
 
 output resourceGroup string = rg.name
 output appHostname string = appservice.outputs.hostname
+output uiHostname string = staticwebapp.outputs.defaultHostname
