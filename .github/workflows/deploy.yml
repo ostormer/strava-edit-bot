@@ -20,6 +20,16 @@ on:
         required: false
         default: false
         type: boolean
+      force_api:
+        description: 'Deploy API even without API file changes'
+        required: false
+        default: false
+        type: boolean
+      force_ui:
+        description: 'Deploy UI even without UI file changes'
+        required: false
+        default: false
+        type: boolean
 
 # Required for OIDC token exchange with Azure and PR coverage comments
 permissions:
@@ -38,6 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       infra: ${{ steps.filter.outputs.infra }}
+      api: ${{ steps.filter.outputs.api }}
+      ui: ${{ steps.filter.outputs.ui }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -48,6 +60,10 @@ jobs:
           filters: |
             infra:
               - 'infrastructure/**'
+            api:
+              - 'StravaEditBotApi/**'
+            ui:
+              - 'strava-edit-bot-ui/**'
 
   # ── Run tests with coverage ───────────────────────────────────────────────────
   test:
@@ -91,7 +107,10 @@ jobs:
   # ── Build and package the API ─────────────────────────────────────────────────
   build:
     name: Build API
-    needs: test
+    needs: [test, changes]
+    if: |
+      needs.changes.outputs.api == 'true' ||
+      (github.event_name == 'workflow_dispatch' && inputs.force_api)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -121,6 +140,10 @@ jobs:
   #   prod → --mode production (loads .env.production)
   build-ui:
     name: Build UI
+    needs: changes
+    if: |
+      needs.changes.outputs.ui == 'true' ||
+      (github.event_name == 'workflow_dispatch' && inputs.force_ui)
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     steps:
@@ -180,7 +203,7 @@ jobs:
             --name "deploy-${ENV}-${{ github.run_id }}"
 
   # ── Deploy API ────────────────────────────────────────────────────────────────
-  # Always runs on push to main. Waits for infra if it ran; skips gracefully if not.
+  # Runs when API files change. Waits for infra if it ran; skips gracefully if not.
   # EF migrations run on app startup via MigrateAsync() using the managed identity.
   # App configuration secrets are pushed from GitHub environment secrets on every
   # deploy so rotating a secret takes effect without touching infrastructure.
