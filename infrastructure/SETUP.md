@@ -268,10 +268,50 @@ az deployment sub create \
 The `--location` flag is only where Azure stores the deployment metadata record —
 actual resources go to the `location` value set inside the `.bicepparam` file.
 
-A successful deployment prints the App Service hostname:
+A successful deployment prints both hostnames:
 ```
 "appHostname": "strava-edit-bot-dev.azurewebsites.net"
+"uiHostname":  "<generated>.azurestaticapps.net"
 ```
+
+The SWA hostname is auto-generated and cannot be predicted in advance. The Bicep
+wires it directly into the App Service's `Cors__AllowedOrigins` setting, so CORS
+is configured automatically — no manual step needed.
+
+---
+
+## 9. Configure GitHub Actions for the frontend
+
+After the first deploy, the Static Web App exists and you can complete the CI/CD setup.
+
+### Get the SWA deployment token
+
+```bash
+az staticwebapp secrets list \
+  --name strava-edit-bot-dev-ui \
+  --resource-group strava-edit-bot-dev-rg \
+  --query "properties.apiKey" -o tsv
+```
+
+### Add to GitHub environment secrets and variables
+
+`GitHub repo → Settings → Environments → dev`
+
+| Type | Name | Value |
+|---|---|---|
+| Secret | `AZURE_STATIC_WEB_APPS_API_TOKEN` | token from above |
+| Variable | `VITE_API_BASE_URL` | `https://strava-edit-bot-dev.azurewebsites.net` |
+
+The `AZURE_STATIC_WEB_APPS_API_TOKEN` is a long-lived token that grants write access
+to the SWA. Treat it like a password — rotate it if it leaks:
+
+```bash
+az staticwebapp secrets reset-api-key \
+  --name strava-edit-bot-dev-ui \
+  --resource-group strava-edit-bot-dev-rg
+```
+
+Then update the GitHub secret with the new value.
 
 ---
 
