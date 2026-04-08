@@ -19,7 +19,6 @@ public class TokenService(IConfiguration configuration) : ITokenService
             audience: configuration["Jwt:Audience"],
             claims: [
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email!),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             ],
             expires: DateTime.UtcNow.AddMinutes(15),

@@ -26,6 +26,8 @@ StravaEditBotApi.Tests/    # NUnit test suite            → StravaEditBotApi.Te
 strava-edit-bot-ui/        # React frontend              → strava-edit-bot-ui/AGENTS.md
 infrastructure/            # Bicep IaC                   → infrastructure/AGENTS.md
 bruno/                     # Bruno API collection for manual testing
+docs/                      # Architecture docs
+  auth.md                  # Auth design, token model, swimlane diagrams → docs/auth.md
 ```
 
 ---

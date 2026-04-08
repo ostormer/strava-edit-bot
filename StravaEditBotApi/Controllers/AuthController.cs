@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StravaEditBotApi.Data;
@@ -11,7 +10,7 @@ namespace StravaEditBotApi.Controllers;
 [ApiController]
 [Route("api/auth")]
 public class AuthController(
-    UserManager<AppUser> userManager,
+    IStravaAuthService stravaAuthService,
     ITokenService tokenService,
     AppDbContext db,
     IWebHostEnvironment env
@@ -20,27 +19,35 @@ public class AuthController(
     private static readonly TimeSpan _refreshTokenLifetime = TimeSpan.FromDays(7);
     private const string RefreshTokenCookieName = "refreshToken";
 
-    [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync([FromBody] RegisterDto dto)
+    [HttpPost("strava/callback")]
+    public async Task<IActionResult> StravaCallbackAsync([FromBody] StravaCallbackDto dto)
     {
-        var user = new AppUser { UserName = dto.Email, Email = dto.Email };
-        var result = await userManager.CreateAsync(user, dto.Password);
-
-        if (!result.Succeeded)
+        StravaTokenData tokenData;
+        try
         {
-            return BadRequest(result.Errors);
+            tokenData = await stravaAuthService.ExchangeCodeAsync(dto.Code);
         }
-        return await IssueTokensAsync(user);
-    }
-
-    [HttpPost("login")]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginDto dto)
-    {
-        var user = await userManager.FindByEmailAsync(dto.Email);
-        if (user == null || !await userManager.CheckPasswordAsync(user, dto.Password))
+        catch (Exception)
         {
-            return Unauthorized();
+            return BadRequest("Failed to exchange Strava authorization code.");
         }
+
+        var user = await db.Users.SingleOrDefaultAsync(u => u.StravaAthleteId == tokenData.AthleteId);
+
+        if (user is null)
+        {
+            user = new AppUser
+            {
+                UserName = tokenData.AthleteId.ToString(),
+                StravaAthleteId = tokenData.AthleteId,
+            };
+            await db.Users.AddAsync(user);
+        }
+
+        user.StravaAccessToken = tokenData.AccessToken;
+        user.StravaRefreshToken = tokenData.RefreshToken;
+        user.StravaTokenExpiresAt = tokenData.ExpiresAt;
+        await db.SaveChangesAsync();
 
         return await IssueTokensAsync(user);
     }
@@ -49,7 +56,7 @@ public class AuthController(
     public async Task<IActionResult> RefreshAsync()
     {
         string? rawToken = Request.Cookies[RefreshTokenCookieName];
-        if (rawToken == null)
+        if (rawToken is null)
         {
             return Unauthorized();
         }
@@ -59,13 +66,12 @@ public class AuthController(
             .Include(r => r.User)
             .SingleOrDefaultAsync(r => r.TokenHash == hash);
 
-        if (stored == null || !stored.IsActive)
+        if (stored is null || !stored.IsActive)
         {
             return Unauthorized();
         }
 
         // Revoke the old token before issuing a new one (rotation).
-
         stored.RevokedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
@@ -76,11 +82,11 @@ public class AuthController(
     public async Task<IActionResult> LogoutAsync()
     {
         string? rawToken = Request.Cookies[RefreshTokenCookieName];
-        if (rawToken != null)
+        if (rawToken is not null)
         {
             string hash = tokenService.HashToken(rawToken);
             var stored = await db.RefreshTokens.SingleOrDefaultAsync(r => r.TokenHash == hash);
-            if (stored != null)
+            if (stored is not null)
             {
                 stored.RevokedAt = DateTime.UtcNow;
                 await db.SaveChangesAsync();

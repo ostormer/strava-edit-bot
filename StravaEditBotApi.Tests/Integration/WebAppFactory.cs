@@ -5,12 +5,27 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using StravaEditBotApi.Data;
+using StravaEditBotApi.Services;
 
 namespace StravaEditBotApi.Tests.Integration;
 
 public class WebAppFactory : WebApplicationFactory<Program>
 {
+    // Default stub — returns a predictable StravaTokenData for athlete 111222.
+    // Override in tests that need different behaviour.
+    public IStravaAuthService StravaAuthService { get; } =
+        CreateDefaultStravaAuthStub();
+
+    private static IStravaAuthService CreateDefaultStravaAuthStub()
+    {
+        var stub = Substitute.For<IStravaAuthService>();
+        stub.ExchangeCodeAsync(Arg.Any<string>())
+            .Returns(new StravaTokenData(111222, "strava-access", "strava-refresh", DateTime.UtcNow.AddHours(6)));
+        return stub;
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         // Provide a JWT secret so TokenService works in tests (Jwt:Secret is not in appsettings.json).
@@ -30,6 +45,14 @@ public class WebAppFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            // Replace the real IStravaAuthService with a controllable stub.
+            // AddHttpClient may register multiple descriptors for the same type, so remove all.
+            foreach (var d in services.Where(s => s.ServiceType == typeof(IStravaAuthService)).ToList())
+            {
+                services.Remove(d);
+            }
+            services.AddSingleton<IStravaAuthService>(StravaAuthService);
+
             // In EF Core 8+, AddDbContext registers four service types:
             //   1. IDbContextOptionsConfiguration<T>  — the configuration action lambda (UseSqlServer etc.)
             //   2. DbContextOptions<T>                — the built options object

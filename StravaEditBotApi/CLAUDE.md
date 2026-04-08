@@ -9,12 +9,13 @@ ASP.NET Core Web API. See the root `AGENTS.md` for project context and stack ove
 ```
 Controllers/
   ActivitiesController.cs             # CRUD for activities
-  AuthController.cs                   # /register, /login, /refresh, /logout
+  AuthController.cs                   # /strava/callback, /refresh, /logout
 Services/
   IActivityService / ActivityService
   ITokenService / TokenService        # JWT minting + refresh token crypto
+  IStravaAuthService / StravaAuthService  # Strava OAuth token exchange
 DTOs/                                 # Records: CreateActivityDto, UpdateActivityDto,
-                                      #          RegisterDto, LoginDto, AuthResponseDto
+                                      #          StravaCallbackDto, AuthResponseDto
 Models/
   Activity.cs
   AppUser.cs        # extends IdentityUser
