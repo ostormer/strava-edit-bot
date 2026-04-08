@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi", "StravaEditBotApi\StravaEditBotApi.csproj", "{CFE84753-332E-DF93-454A-9B5552D0F492}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi", "StravaEditBotApi/StravaEditBotApi.csproj", "{CFE84753-332E-DF93-454A-9B5552D0F492}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi.Tests", "StravaEditBotApi.Tests\StravaEditBotApi.Tests.csproj", "{8B6E8DCB-2F30-45D3-9EE4-CB96B78D7269}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi.Tests", "StravaEditBotApi.Tests/StravaEditBotApi.Tests.csproj", "{8B6E8DCB-2F30-45D3-9EE4-CB96B78D7269}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
