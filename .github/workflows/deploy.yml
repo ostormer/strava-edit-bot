@@ -101,7 +101,7 @@ jobs:
             --compare-branch=origin/main \
             --format markdown:diff-coverage-results.md \
             --fail-under=80
-          cat diff-coverage-results.md >> code-coverage-results.md
+          cat diff-coverage-results.md | sudo tee -a code-coverage-results.md > /dev/null
       - name: Post coverage comment on PR
         uses: marocchino/sticky-pull-request-comment@v2
         if: always() && github.event_name == 'pull_request'
