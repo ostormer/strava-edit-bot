@@ -91,6 +91,16 @@ jobs:
           indicators: true
           output: both
           thresholds: '80 90'
+      - name: Diff coverage report
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          pip install diff-cover --quiet
+          diff-cover coverage/**/coverage.cobertura.xml \
+            --compare-branch=origin/main \
+            --markdown-report=diff-coverage-results.md \
+            --fail-under=80
+          cat diff-coverage-results.md >> code-coverage-results.md
       - name: Post coverage comment on PR
         uses: marocchino/sticky-pull-request-comment@v2
         if: always() && github.event_name == 'pull_request'
