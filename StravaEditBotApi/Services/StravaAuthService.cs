@@ -1,0 +1,50 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Microsoft.Extensions.Configuration;
+
+namespace StravaEditBotApi.Services;
+
+public class StravaAuthService(HttpClient httpClient, IConfiguration configuration) : IStravaAuthService
+{
+    private const string TokenEndpoint = "https://www.strava.com/oauth/token";
+
+    public async Task<StravaTokenData> ExchangeCodeAsync(string code)
+    {
+        string clientId = configuration["Strava:ClientId"]
+            ?? throw new InvalidOperationException("Strava:ClientId is not configured.");
+        string clientSecret = configuration["Strava:ClientSecret"]
+            ?? throw new InvalidOperationException("Strava:ClientSecret is not configured.");
+
+        var formData = new Dictionary<string, string>
+        {
+            ["client_id"] = clientId,
+            ["client_secret"] = clientSecret,
+            ["code"] = code,
+            ["grant_type"] = "authorization_code",
+        };
+
+        var response = await httpClient.PostAsync(TokenEndpoint, new FormUrlEncodedContent(formData));
+        string body = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException(
+                $"Strava token exchange failed. Status: {response.StatusCode}, Body: {body}");
+        }
+
+        var json = JsonNode.Parse(body) as JsonObject
+            ?? throw new JsonException("Failed to parse Strava token response.");
+
+        long athleteId = json["athlete"]?["id"]?.GetValue<long>()
+            ?? throw new JsonException("athlete.id missing in Strava response.");
+        string accessToken = json["access_token"]?.GetValue<string>()
+            ?? throw new JsonException("access_token missing in Strava response.");
+        string refreshToken = json["refresh_token"]?.GetValue<string>()
+            ?? throw new JsonException("refresh_token missing in Strava response.");
+        long expiresAtUnix = json["expires_at"]?.GetValue<long>()
+            ?? throw new JsonException("expires_at missing in Strava response.");
+        DateTime expiresAt = DateTimeOffset.FromUnixTimeSeconds(expiresAtUnix).UtcDateTime;
+
+        return new StravaTokenData(athleteId, accessToken, refreshToken, expiresAt);
+    }
+}

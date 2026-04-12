@@ -1,10 +1,11 @@
 import path from 'path'
 import { defineConfig } from 'vite'
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [TanStackRouterVite({ routesDirectory: './src/routes' }), react(), tailwindcss()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -13,9 +14,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://localhost:5001',
+        target: 'http://localhost:5247',
         changeOrigin: true,
-        secure: false,
       },
     },
   },

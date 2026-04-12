@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using StravaEditBotApi.Controllers;
 using StravaEditBotApi.Data;
 using StravaEditBotApi.DTOs;
@@ -15,7 +15,7 @@ namespace StravaEditBotApi.Tests.Unit.Controllers;
 [TestFixture]
 public class AuthControllerTests
 {
-    private UserManager<AppUser> _userManager = null!;
+    private IStravaAuthService _stravaAuthService = null!;
     private ITokenService _tokenService = null!;
     private AppDbContext _db = null!;
     private IWebHostEnvironment _env = null!;
@@ -24,11 +24,7 @@ public class AuthControllerTests
     [SetUp]
     public void SetUp()
     {
-        // UserManager is a class, not an interface — NSubstitute requires constructor args.
-        var store = Substitute.For<IUserStore<AppUser>>();
-        _userManager = Substitute.For<UserManager<AppUser>>(
-            store, null, null, null, null, null, null, null, null);
-
+        _stravaAuthService = Substitute.For<IStravaAuthService>();
         _tokenService = Substitute.For<ITokenService>();
         _env = Substitute.For<IWebHostEnvironment>();
 
@@ -37,7 +33,7 @@ public class AuthControllerTests
             .Options;
         _db = new AppDbContext(dbOptions);
 
-        _sut = new AuthController(_userManager, _tokenService, _db, _env);
+        _sut = new AuthController(_stravaAuthService, _tokenService, _db, _env);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext()
@@ -47,7 +43,6 @@ public class AuthControllerTests
     [TearDown]
     public void TearDown() => _db.Dispose();
 
-    // Sets up the three ITokenService calls made inside IssueTokensAsync.
     private void SetupTokenService(
         string accessToken = "access-token",
         string rawRefresh = "raw-refresh",
@@ -61,8 +56,8 @@ public class AuthControllerTests
     private void SetRequestCookie(string value) =>
         _sut.ControllerContext.HttpContext.Request.Headers["Cookie"] = $"refreshToken={value}";
 
-    private static AppUser MakeUser(string id = "user-1", string email = "user@example.com") =>
-        new() { Id = id, Email = email, UserName = email };
+    private StravaTokenData MakeStravaTokenData(long athleteId = 123456) =>
+        new(athleteId, "strava-access", "strava-refresh", DateTime.UtcNow.AddHours(6));
 
     private async Task<RefreshToken> SeedActiveTokenAsync(AppUser user, string tokenHash = "valid-hash")
     {
@@ -81,138 +76,85 @@ public class AuthControllerTests
     }
 
     // ========================================================
-    // RegisterAsync
+    // StravaCallbackAsync
     // ========================================================
 
     [Test]
-    public async Task Register_SuccessfulCreation_ReturnsOk()
+    public async Task StravaCallback_NewUser_ReturnsOk()
     {
-        _userManager.CreateAsync(Arg.Any<AppUser>(), Arg.Any<string>())
-            .Returns(IdentityResult.Success);
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>()).Returns(MakeStravaTokenData());
         SetupTokenService();
 
-        var result = await _sut.RegisterAsync(new RegisterDto("user@example.com", "Password1!"));
+        var result = await _sut.StravaCallbackAsync(new StravaCallbackDto("auth-code"));
 
         Assert.That(result, Is.InstanceOf<OkObjectResult>());
     }
 
     [Test]
-    public async Task Register_SuccessfulCreation_ReturnsAccessToken()
+    public async Task StravaCallback_NewUser_ReturnsAccessToken()
     {
-        _userManager.CreateAsync(Arg.Any<AppUser>(), Arg.Any<string>())
-            .Returns(IdentityResult.Success);
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>()).Returns(MakeStravaTokenData());
         SetupTokenService(accessToken: "the-access-token");
 
-        var result = await _sut.RegisterAsync(new RegisterDto("user@example.com", "Password1!"));
+        var result = await _sut.StravaCallbackAsync(new StravaCallbackDto("auth-code"));
 
         var ok = (OkObjectResult)result;
-        Assert.That(ok.Value, Is.InstanceOf<AuthResponseDto>());
         Assert.That(((AuthResponseDto)ok.Value!).AccessToken, Is.EqualTo("the-access-token"));
     }
 
     [Test]
-    public async Task Register_SuccessfulCreation_SetsRefreshTokenCookie()
+    public async Task StravaCallback_NewUser_SetsRefreshTokenCookie()
     {
-        _userManager.CreateAsync(Arg.Any<AppUser>(), Arg.Any<string>())
-            .Returns(IdentityResult.Success);
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>()).Returns(MakeStravaTokenData());
         SetupTokenService();
 
-        await _sut.RegisterAsync(new RegisterDto("user@example.com", "Password1!"));
+        await _sut.StravaCallbackAsync(new StravaCallbackDto("auth-code"));
 
         var setCookie = _sut.ControllerContext.HttpContext.Response.Headers["Set-Cookie"].ToString();
         Assert.That(setCookie, Does.Contain("refreshToken"));
     }
 
     [Test]
-    public async Task Register_SuccessfulCreation_StoresRefreshTokenInDb()
+    public async Task StravaCallback_NewUser_CreatesUserInDb()
     {
-        _userManager.CreateAsync(Arg.Any<AppUser>(), Arg.Any<string>())
-            .Returns(IdentityResult.Success);
-        SetupTokenService(refreshHash: "stored-hash");
+        var tokenData = MakeStravaTokenData(athleteId: 999);
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>()).Returns(tokenData);
+        SetupTokenService();
 
-        await _sut.RegisterAsync(new RegisterDto("user@example.com", "Password1!"));
+        await _sut.StravaCallbackAsync(new StravaCallbackDto("auth-code"));
 
-        Assert.That(_db.RefreshTokens.Count(), Is.EqualTo(1));
-        Assert.That(_db.RefreshTokens.Single().TokenHash, Is.EqualTo("stored-hash"));
+        var user = _db.Users.SingleOrDefault(u => u.StravaAthleteId == 999);
+        Assert.That(user, Is.Not.Null);
     }
 
     [Test]
-    public async Task Register_FailedCreation_ReturnsBadRequest()
+    public async Task StravaCallback_ExistingUser_DoesNotDuplicateUser()
     {
-        var error = new IdentityError { Code = "DuplicateEmail", Description = "Email taken." };
-        _userManager.CreateAsync(Arg.Any<AppUser>(), Arg.Any<string>())
-            .Returns(IdentityResult.Failed(error));
+        var existing = new AppUser
+        {
+            UserName = "123456",
+            StravaAthleteId = 123456,
+        };
+        await _db.Users.AddAsync(existing);
+        await _db.SaveChangesAsync();
 
-        var result = await _sut.RegisterAsync(new RegisterDto("user@example.com", "Password1!"));
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>()).Returns(MakeStravaTokenData(athleteId: 123456));
+        SetupTokenService();
+
+        await _sut.StravaCallbackAsync(new StravaCallbackDto("auth-code"));
+
+        Assert.That(_db.Users.Count(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task StravaCallback_StravaExchangeThrows_ReturnsBadRequest()
+    {
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>())
+            .Throws(new HttpRequestException("Strava error"));
+
+        var result = await _sut.StravaCallbackAsync(new StravaCallbackDto("bad-code"));
 
         Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
-    }
-
-    // ========================================================
-    // LoginAsync
-    // ========================================================
-
-    [Test]
-    public async Task Login_UserNotFound_ReturnsUnauthorized()
-    {
-        _userManager.FindByEmailAsync(Arg.Any<string>()).Returns((AppUser?)null);
-
-        var result = await _sut.LoginAsync(new LoginDto("missing@example.com", "Password1!"));
-
-        Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
-    }
-
-    [Test]
-    public async Task Login_WrongPassword_ReturnsUnauthorized()
-    {
-        var user = MakeUser();
-        _userManager.FindByEmailAsync(user.Email!).Returns(user);
-        _userManager.CheckPasswordAsync(user, Arg.Any<string>()).Returns(false);
-
-        var result = await _sut.LoginAsync(new LoginDto(user.Email!, "WrongPassword!"));
-
-        Assert.That(result, Is.InstanceOf<UnauthorizedResult>());
-    }
-
-    [Test]
-    public async Task Login_ValidCredentials_ReturnsOk()
-    {
-        var user = MakeUser();
-        _userManager.FindByEmailAsync(user.Email!).Returns(user);
-        _userManager.CheckPasswordAsync(user, Arg.Any<string>()).Returns(true);
-        SetupTokenService();
-
-        var result = await _sut.LoginAsync(new LoginDto(user.Email!, "Password1!"));
-
-        Assert.That(result, Is.InstanceOf<OkObjectResult>());
-    }
-
-    [Test]
-    public async Task Login_ValidCredentials_ReturnsAccessToken()
-    {
-        var user = MakeUser();
-        _userManager.FindByEmailAsync(user.Email!).Returns(user);
-        _userManager.CheckPasswordAsync(user, Arg.Any<string>()).Returns(true);
-        SetupTokenService(accessToken: "login-access-token");
-
-        var result = await _sut.LoginAsync(new LoginDto(user.Email!, "Password1!"));
-
-        var ok = (OkObjectResult)result;
-        Assert.That(((AuthResponseDto)ok.Value!).AccessToken, Is.EqualTo("login-access-token"));
-    }
-
-    [Test]
-    public async Task Login_ValidCredentials_SetsRefreshTokenCookie()
-    {
-        var user = MakeUser();
-        _userManager.FindByEmailAsync(user.Email!).Returns(user);
-        _userManager.CheckPasswordAsync(user, Arg.Any<string>()).Returns(true);
-        SetupTokenService();
-
-        await _sut.LoginAsync(new LoginDto(user.Email!, "Password1!"));
-
-        var setCookie = _sut.ControllerContext.HttpContext.Response.Headers["Set-Cookie"].ToString();
-        Assert.That(setCookie, Does.Contain("refreshToken"));
     }
 
     // ========================================================
@@ -241,7 +183,7 @@ public class AuthControllerTests
     [Test]
     public async Task Refresh_RevokedToken_ReturnsUnauthorized()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await _db.Users.AddAsync(user);
         await _db.RefreshTokens.AddAsync(new RefreshToken
         {
@@ -265,7 +207,7 @@ public class AuthControllerTests
     [Test]
     public async Task Refresh_ExpiredToken_ReturnsUnauthorized()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await _db.Users.AddAsync(user);
         await _db.RefreshTokens.AddAsync(new RefreshToken
         {
@@ -288,7 +230,7 @@ public class AuthControllerTests
     [Test]
     public async Task Refresh_ValidToken_ReturnsOk()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await SeedActiveTokenAsync(user, "valid-hash");
 
         SetRequestCookie("valid-raw-token");
@@ -303,7 +245,7 @@ public class AuthControllerTests
     [Test]
     public async Task Refresh_ValidToken_ReturnsNewAccessToken()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await SeedActiveTokenAsync(user, "valid-hash");
 
         SetRequestCookie("valid-raw-token");
@@ -319,7 +261,7 @@ public class AuthControllerTests
     [Test]
     public async Task Refresh_ValidToken_RevokesOldToken()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await SeedActiveTokenAsync(user, "valid-hash");
 
         SetRequestCookie("valid-raw-token");
@@ -335,7 +277,7 @@ public class AuthControllerTests
     [Test]
     public async Task Refresh_ValidToken_IssuesNewRefreshTokenInDb()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await SeedActiveTokenAsync(user, "valid-hash");
 
         SetRequestCookie("valid-raw-token");
@@ -363,7 +305,7 @@ public class AuthControllerTests
     [Test]
     public async Task Logout_WithValidCookie_ReturnsOk()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await SeedActiveTokenAsync(user, "logout-hash");
         SetRequestCookie("logout-raw-token");
         _tokenService.HashToken("logout-raw-token").Returns("logout-hash");
@@ -376,7 +318,7 @@ public class AuthControllerTests
     [Test]
     public async Task Logout_WithValidCookie_RevokesToken()
     {
-        var user = MakeUser();
+        var user = new AppUser { Id = "user-1", UserName = "user-1" };
         await SeedActiveTokenAsync(user, "logout-hash");
         SetRequestCookie("logout-raw-token");
         _tokenService.HashToken("logout-raw-token").Returns("logout-hash");

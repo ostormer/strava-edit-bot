@@ -3,7 +3,7 @@
 Complete guide to go from a fresh Azure account to a working deployment with GitHub
 Actions CI/CD. Follow the steps in order — each section is a prerequisite for the next.
 
-Sections 3–5 must be repeated for each environment (dev/prod). Everything else is
+Sections 4–6 must be repeated for each environment (dev/prod). Everything else is
 done once per subscription.
 
 ---
@@ -65,7 +65,67 @@ az provider show --namespace Microsoft.ManagedIdentity --query "registrationStat
 
 ---
 
-## 3. Create an App Registration
+## 3. Create a Strava API application
+
+The app authenticates users via Strava OAuth. Go to https://www.strava.com/settings/api
+to create or manage your application.
+
+### The one-app-per-account constraint
+
+Strava limits each account to **one API application** unless you apply for and are
+approved for additional ones. This affects how you handle multiple environments:
+
+**Option A — One app, all environments share a domain (recommended)**
+
+Register a custom domain (e.g. `yourapp.com`) and deploy all environments as subdomains
+(`dev.yourapp.com`, `yourapp.com`). Set the Strava app's Authorization Callback Domain
+to your root domain — Strava accepts it for all subdomains too. Local development
+cannot use Strava OAuth directly; test auth against the deployed dev environment instead.
+
+**Option B — Separate Strava account per environment**
+
+Create a separate Strava account (e.g. a dedicated dev account) and register one app
+per environment. This lets `localhost` be used for local dev at the cost of maintaining
+multiple accounts.
+
+### Authorization Callback Domain
+
+In your Strava app settings, set the **Authorization Callback Domain** to match where
+your frontend is hosted:
+
+| Environment | Domain to set |
+|---|---|
+| Local dev (option B only) | `localhost` |
+| Deployed (SWA hostname) | `<generated>.azurestaticapps.net` |
+| Deployed (custom domain) | `yourapp.com` |
+
+The SWA hostname is auto-generated and won't be known until after the first deploy in
+section 9 — come back and set it then.
+
+### Note down credentials
+
+Copy the **Client ID** and **Client Secret** from the Strava app settings page.
+You'll need them in sections 8 and 10.
+
+### Local dev setup
+
+Add the credentials to .NET user secrets so they stay out of source control:
+
+```bash
+dotnet user-secrets set "Strava:ClientId" "<client-id>" --project StravaEditBotApi
+dotnet user-secrets set "Strava:ClientSecret" "<client-secret>" --project StravaEditBotApi
+```
+
+Set the client ID in the frontend dev env file (client IDs are public — safe to commit):
+
+```
+# strava-edit-bot-ui/.env.development
+VITE_STRAVA_CLIENT_ID=<client-id>
+```
+
+---
+
+## 4. Create an App Registration
 
 One App Registration per environment — dev and prod tokens must be separate audiences.
 Repeat this section for each environment, substituting `dev`/`prod` as appropriate.
@@ -82,12 +142,12 @@ az ad app list --display-name "strava-edit-bot-dev" --query "[0].appId" -o tsv
 
 ---
 
-## 4. Set Application ID URI and expose a scope
+## 5. Set Application ID URI and expose a scope
 
 The API needs an Application ID URI before clients can request tokens for it.
 
 ```bash
-# Replace <appId> with the client ID from step 3
+# Replace <appId> with the client ID from step 4
 az ad app update \
   --id <appId> \
   --identifier-uris "api://<appId>"
@@ -128,7 +188,7 @@ az ad app show --id <appId> --query "api.oauth2PermissionScopes" -o json
 
 ---
 
-## 5. Fill in the param file for this environment
+## 6. Fill in the param file for this environment
 
 `infrastructure/environments/dev.bicepparam`:
 ```
@@ -137,7 +197,7 @@ param entraAppClientId = '<dev-app-registration-client-id>'
 
 ---
 
-## 6. Note down values needed for app configuration
+## 7. Note down values needed for app configuration
 
 These are needed later when configuring `appsettings.json` for `Microsoft.Identity.Web`:
 
@@ -152,7 +212,7 @@ az ad app list --display-name "strava-edit-bot-prod" --query "[0].appId" -o tsv
 
 ---
 
-## 7. Create a service principal for GitHub Actions
+## 8. Create a service principal for GitHub Actions
 
 GitHub Actions needs an Azure identity to run Bicep deployments. This uses OIDC
 federated credentials — no client secrets are stored anywhere.
@@ -230,7 +290,6 @@ When adding prod later, create a `prod` environment and configure protection rul
 
 ### App configuration secrets
 
-The deployed app needs `Jwt:Secret`, `Jwt:Issuer`, and `Jwt:Audience` at runtime.
 GitHub Actions pushes these to the App Service on every deploy, so GitHub is the
 single source of truth. Add them as environment secrets for each environment:
 
@@ -241,13 +300,20 @@ single source of truth. Add them as environment secrets for each environment:
 | `JWT_SECRET` | `openssl rand -base64 64` (long random string) |
 | `JWT_ISSUER` | `https://strava-edit-bot-dev.azurewebsites.net` |
 | `JWT_AUDIENCE` | `https://strava-edit-bot-dev.azurewebsites.net` |
+| `STRAVA_CLIENT_SECRET` | client secret from the Strava app (section 3) |
+
+Add the client ID as an environment **variable** (not a secret — client IDs are public):
+
+| Variable | Value |
+|---|---|
+| `STRAVA_CLIENT_ID` | client ID from the Strava app (section 3) |
 
 To rotate a secret: update it in GitHub and re-run the deploy workflow — no Bicep
 changes needed.
 
 ---
 
-## 8. First deploy (manual, from local machine)
+## 9. First deploy (manual, from local machine)
 
 Run once to create the Azure resources before GitHub Actions takes over:
 
@@ -278,9 +344,13 @@ The SWA hostname is auto-generated and cannot be predicted in advance. The Bicep
 wires it directly into the App Service's `Cors__AllowedOrigins` setting, so CORS
 is configured automatically — no manual step needed.
 
+**After the first deploy**: if you haven't set the Strava app's Authorization Callback
+Domain yet (it requires the SWA hostname), go back to https://www.strava.com/settings/api
+and set it to the `uiHostname` printed above.
+
 ---
 
-## 9. Configure GitHub Actions for the frontend
+## 10. Configure GitHub Actions for the frontend
 
 After the first deploy, the Static Web App exists and you can complete the CI/CD setup.
 
@@ -301,6 +371,7 @@ az staticwebapp secrets list \
 |---|---|---|
 | Secret | `AZURE_STATIC_WEB_APPS_API_TOKEN` | token from above |
 | Variable | `VITE_API_BASE_URL` | `https://strava-edit-bot-dev.azurewebsites.net` |
+| Variable | `VITE_STRAVA_CLIENT_ID` | client ID from the Strava app (section 3) |
 
 The `AZURE_STATIC_WEB_APPS_API_TOKEN` is a long-lived token that grants write access
 to the SWA. Treat it like a password — rotate it if it leaks:

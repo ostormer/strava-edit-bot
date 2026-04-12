@@ -3,7 +3,6 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StravaEditBotApi.Data;
@@ -13,14 +12,12 @@ using StravaEditBotApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Registers UserManager<AppUser>, password hasher, validators, and EF stores.
+// Registers UserManager<AppUser> and EF stores for the AspNetUsers table.
 // AddIdentityCore (not AddIdentity) avoids setting cookie auth as the default scheme,
 // which would conflict with JWT bearer on an API.
-builder.Services.AddIdentityCore<AppUser>(options =>
-{
-    options.User.RequireUniqueEmail = true;
-})
-.AddEntityFrameworkStores<AppDbContext>();
+// No password authentication — users authenticate via Strava OAuth.
+builder.Services.AddIdentityCore<AppUser>()
+    .AddEntityFrameworkStores<AppDbContext>();
 
 if (builder.Environment.IsDevelopment())
 {
@@ -92,6 +89,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 // Custom services
 builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddHttpClient<IStravaAuthService, StravaAuthService>();
 
 var app = builder.Build();
 

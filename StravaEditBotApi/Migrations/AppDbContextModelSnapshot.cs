@@ -233,6 +233,18 @@ namespace StravaEditBotApi.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("StravaAccessToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("StravaAthleteId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StravaRefreshToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("StravaTokenExpiresAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 

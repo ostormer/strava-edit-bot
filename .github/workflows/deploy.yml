@@ -91,12 +91,34 @@ jobs:
           indicators: true
           output: both
           thresholds: '80 90'
+      - name: Diff coverage report
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --unshallow
+          git fetch origin main
+          pip install diff-cover --quiet
+          diff-cover coverage/**/coverage.cobertura.xml \
+            --compare-branch=origin/main \
+            --format markdown:diff-coverage-results.md \
+            --fail-under=80 || DIFF_RESULT=$?
+          sed -i 's/staged and unstaged changes/new and changed lines/' diff-coverage-results.md
+          sed -i '/^\|.*\|\s*100%\s*\|/d' diff-coverage-results.md
+          sed -i '/^| ---/a _Files at 100% diff coverage are not shown._' diff-coverage-results.md
+          if ! grep -q '^\| ' diff-coverage-results.md; then
+            sed -i '/^| /d' diff-coverage-results.md
+            sed -i '/^_Files at/d' diff-coverage-results.md
+            echo '_All changed lines are covered._' >> diff-coverage-results.md
+          fi
+          cat diff-coverage-results.md > combined-coverage-results.md
+          printf '\n---\n\n## Total Coverage\n\n' >> combined-coverage-results.md
+          cat code-coverage-results.md >> combined-coverage-results.md
+          exit ${DIFF_RESULT:-0}
       - name: Post coverage comment on PR
         uses: marocchino/sticky-pull-request-comment@v2
         if: always() && github.event_name == 'pull_request'
         with:
           recreate: true
-          path: code-coverage-results.md
+          path: combined-coverage-results.md
       - uses: actions/upload-artifact@v7
         if: always()
         with:

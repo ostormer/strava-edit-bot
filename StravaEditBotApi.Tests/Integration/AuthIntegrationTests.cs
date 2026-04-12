@@ -2,8 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using StravaEditBotApi.Data;
 using StravaEditBotApi.DTOs;
+using StravaEditBotApi.Services;
 
 namespace StravaEditBotApi.Tests.Integration;
 
@@ -28,6 +31,10 @@ public class AuthIntegrationTests
         db.RefreshTokens.RemoveRange(db.RefreshTokens);
         db.Users.RemoveRange(db.Users);
         db.SaveChanges();
+
+        // Reset the stub to default behaviour before each test.
+        _factory.StravaAuthService.ExchangeCodeAsync(Arg.Any<string>())
+            .Returns(new StravaTokenData(111222, "strava-access", "strava-refresh", DateTime.UtcNow.AddHours(6)));
     }
 
     [OneTimeTearDown]
@@ -37,26 +44,22 @@ public class AuthIntegrationTests
         _factory.Dispose();
     }
 
-    private static RegisterDto ValidDto(
-        string email = "user@example.com",
-        string password = "Password123!") => new(email, password);
-
     // ========================================================
-    // POST /api/auth/register
+    // POST /api/auth/strava/callback
     // ========================================================
 
     [Test]
-    public async Task Register_ValidCredentials_Returns200()
+    public async Task StravaCallback_ValidCode_Returns200()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register", ValidDto());
+        var response = await _client.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("valid-code"));
 
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
     }
 
     [Test]
-    public async Task Register_ValidCredentials_ReturnsAccessTokenInBody()
+    public async Task StravaCallback_ValidCode_ReturnsAccessTokenInBody()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register", ValidDto());
+        var response = await _client.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("valid-code"));
         var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
 
         Assert.That(body, Is.Not.Null);
@@ -64,13 +67,12 @@ public class AuthIntegrationTests
     }
 
     [Test]
-    public async Task Register_ValidCredentials_SetsRefreshTokenCookie()
+    public async Task StravaCallback_ValidCode_SetsRefreshTokenCookie()
     {
-        // Use a cookie-transparent client so Set-Cookie header is visible.
         using var rawClient = _factory.CreateClient(
             new WebApplicationFactoryClientOptions { HandleCookies = false });
 
-        var response = await rawClient.PostAsJsonAsync("/api/auth/register", ValidDto());
+        var response = await rawClient.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("valid-code"));
 
         var setCookieHeader = response.Headers
             .GetValues("Set-Cookie")
@@ -81,49 +83,47 @@ public class AuthIntegrationTests
     }
 
     [Test]
-    public async Task Register_DuplicateEmail_Returns400()
+    public async Task StravaCallback_NewUser_CreatesUserInDatabase()
     {
-        await _client.PostAsJsonAsync("/api/auth/register", ValidDto());
-
-        var response = await _client.PostAsJsonAsync("/api/auth/register", ValidDto());
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-    }
-
-    [Test]
-    public async Task Register_WeakPassword_Returns400()
-    {
-        var response = await _client.PostAsJsonAsync("/api/auth/register", ValidDto(password: "weak"));
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-    }
-
-    [Test]
-    public async Task Register_InvalidEmailFormat_Returns400()
-    {
-        var response = await _client.PostAsJsonAsync("/api/auth/register", ValidDto(email: "notanemail"));
-
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-    }
-
-    [Test]
-    public async Task Register_PersistsUserToDatabase()
-    {
-        var dto = ValidDto(email: "persisted@example.com");
-
-        await _client.PostAsJsonAsync("/api/auth/register", dto);
+        await _client.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("valid-code"));
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var user = db.Users.SingleOrDefault(u => u.Email == dto.Email);
+        var user = db.Users.SingleOrDefault(u => u.StravaAthleteId == 111222);
 
         Assert.That(user, Is.Not.Null);
     }
 
     [Test]
-    public async Task Register_ValidCredentials_StoresRefreshTokenInDatabase()
+    public async Task StravaCallback_ExistingUser_DoesNotDuplicateUser()
     {
-        await _client.PostAsJsonAsync("/api/auth/register", ValidDto());
+        // First login creates the user.
+        await _client.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("first-code"));
+
+        // Second login with the same athlete ID should reuse the existing user.
+        await _client.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("second-code"));
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        Assert.That(db.Users.Count(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task StravaCallback_StravaExchangeFailure_Returns400()
+    {
+        _factory.StravaAuthService.ExchangeCodeAsync(Arg.Any<string>())
+            .Throws(new HttpRequestException("Strava error"));
+
+        var response = await _client.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("bad-code"));
+
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+    }
+
+    [Test]
+    public async Task StravaCallback_ValidCode_StoresRefreshTokenInDatabase()
+    {
+        await _client.PostAsJsonAsync("/api/auth/strava/callback", new StravaCallbackDto("valid-code"));
 
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

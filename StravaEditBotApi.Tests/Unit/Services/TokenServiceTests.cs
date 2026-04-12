@@ -26,11 +26,10 @@ public class TokenServiceTests
         _sut = new TokenService(_config);
     }
 
-    private static AppUser MakeUser(string? id = null, string? email = null) => new()
+    private static AppUser MakeUser(string? id = null) => new()
     {
         Id = id ?? Guid.NewGuid().ToString(),
-        Email = email ?? "test@example.com",
-        UserName = email ?? "test@example.com",
+        UserName = "test-user",
     };
 
     // ========================================================
@@ -63,18 +62,6 @@ public class TokenServiceTests
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
 
         Assert.That(jwt.Subject, Is.EqualTo("user-123"));
-    }
-
-    [Test]
-    public void GenerateAccessToken_ValidUser_ContainsCorrectEmailClaim()
-    {
-        var user = MakeUser(email: "alice@example.com");
-
-        var token = _sut.GenerateAccessToken(user);
-        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-        var emailClaim = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email);
-
-        Assert.That(emailClaim?.Value, Is.EqualTo("alice@example.com"));
     }
 
     [Test]
