@@ -1,13 +1,20 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import api, { setAccessToken } from '@/lib/api'
+import { currentUserQueryOptions, type CurrentUser } from '@/lib/queries/user'
 
 export const Route = createFileRoute('/auth/callback')({
   component: CallbackPage,
 })
 
+interface CallbackResponse extends CurrentUser {
+  accessToken: string
+}
+
 function CallbackPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -20,15 +27,23 @@ function CallbackPage() {
     }
 
     api
-      .post<{ accessToken: string }>('/api/auth/strava/callback', { code })
+      .post<CallbackResponse>('/api/auth/strava/callback', { code })
       .then(({ data }) => {
         setAccessToken(data.accessToken)
+        // Pre-populate the query cache so any component calling useCurrentUser()
+        // has the data immediately — no extra /api/users/me fetch needed.
+        queryClient.setQueryData(currentUserQueryOptions.queryKey, {
+          firstname: data.firstname,
+          lastname: data.lastname,
+          profileMedium: data.profileMedium,
+          profile: data.profile,
+        })
         navigate({ to: '/' })
       })
       .catch(() => {
         setError('Failed to complete sign-in. Please try again.')
       })
-  }, [navigate])
+  }, [navigate, queryClient])
 
   if (error) {
     return (
