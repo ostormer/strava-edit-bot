@@ -1,13 +1,12 @@
-﻿namespace StravaAPILibary.Models.Activities
+﻿namespace StravaAPILibrary.Models.Activities;
+
+/// <summary>
+/// Represents a minimal reference to an activity.
+/// </summary>
+public class MetaActivity
 {
     /// <summary>
-    /// Represents a minimal reference to an activity.
+    /// The unique identifier of the activity.
     /// </summary>
-    public class MetaActivity
-    {
-        /// <summary>
-        /// The unique identifier of the activity.
-        /// </summary>
-        public long Id { get; set; }
-    }
+    public long Id { get; set; }
 }

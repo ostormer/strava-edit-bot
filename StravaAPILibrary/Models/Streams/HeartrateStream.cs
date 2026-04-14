@@ -1,15 +1,14 @@
-﻿using StravaAPILibary.Models.Streams;
+﻿using StravaAPILibrary.Models.Streams;
 
-namespace StravaAPILibary.Models.Streams
+namespace StravaAPILibrary.Models.Streams;
+
+/// <summary>
+/// Represents a stream of heart rate data points.
+/// </summary>
+public class HeartrateStream : BaseStream
 {
     /// <summary>
-    /// Represents a stream of heart rate data points.
+    /// The sequence of heart rate values, in beats per minute.
     /// </summary>
-    public class HeartrateStream : BaseStream
-    {
-        /// <summary>
-        /// The sequence of heart rate values, in beats per minute.
-        /// </summary>
-        public List<int> Data { get; set; } = new();
-    }
+    public List<int> Data { get; set; } = new();
 }

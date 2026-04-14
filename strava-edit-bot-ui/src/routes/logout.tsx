@@ -1,22 +1,19 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import api, { setAccessToken } from '@/lib/api'
+import api from '@/lib/api'
 
 export const Route = createFileRoute('/logout')({
   component: LogoutPage,
 })
 
 function LogoutPage() {
-  const navigate = useNavigate()
-
   useEffect(() => {
     api
       .post('/api/auth/logout')
       .finally(() => {
-        setAccessToken(null)
-        navigate({ to: '/login' })
+        window.location.href = '/login'
       })
-  }, [navigate])
+  }, [])
 
   return null
 }

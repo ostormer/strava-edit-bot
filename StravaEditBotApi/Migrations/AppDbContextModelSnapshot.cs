@@ -239,6 +239,18 @@ namespace StravaEditBotApi.Migrations
                     b.Property<long?>("StravaAthleteId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("StravaFirstname")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StravaLastname")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StravaProfile")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StravaProfileMedium")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("StravaRefreshToken")
                         .HasColumnType("nvarchar(max)");
 

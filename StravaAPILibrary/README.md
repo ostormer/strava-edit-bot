@@ -1,4 +1,4 @@
-# StravaAPILibary
+# StravaAPILibrary
 
 A comprehensive .NET library for interacting with the Strava API, providing easy-to-use methods for authentication, data retrieval, and activity management.
 
@@ -9,14 +9,14 @@ A comprehensive .NET library for interacting with the Strava API, providing easy
 Add the library to your project:
 
 ```bash
-dotnet add package StravaAPILibary
+dotnet add package StravaAPILibrary
 ```
 
 ### Basic Usage
 
 ```csharp
-using StravaAPILibary.Authentication;
-using StravaAPILibary.API;
+using StravaAPILibrary.Authentication;
+using StravaAPILibrary.API;
 
 // 1. Set up credentials
 var credentials = new Credentials("your_client_id", "your_client_secret", "read,activity:read_all");
@@ -41,10 +41,10 @@ if (success)
 
 ## 📚 Documentation
 
-- **[API Reference](https://deltatoolbox.github.io/StravaAPILibary/api/)** - Complete API documentation
-- **[Getting Started Guide](https://deltatoolbox.github.io/StravaAPILibary/articles/getting-started/)** - Detailed setup instructions
-- **[Authentication Guide](https://deltatoolbox.github.io/StravaAPILibary/articles/authentication/)** - OAuth flow and token management
-- **[Examples](https://deltatoolbox.github.io/StravaAPILibary/articles/examples/)** - Common usage patterns
+- **[API Reference](https://deltatoolbox.github.io/StravaAPILibrary/api/)** - Complete API documentation
+- **[Getting Started Guide](https://deltatoolbox.github.io/StravaAPILibrary/articles/getting-started/)** - Detailed setup instructions
+- **[Authentication Guide](https://deltatoolbox.github.io/StravaAPILibrary/articles/authentication/)** - OAuth flow and token management
+- **[Examples](https://deltatoolbox.github.io/StravaAPILibrary/articles/examples/)** - Common usage patterns
 
 ## 🔧 Features
 
@@ -77,7 +77,7 @@ if (success)
 ## 📦 NuGet Package
 
 ```xml
-<PackageReference Include="StravaAPILibary" Version="1.0.0" />
+<PackageReference Include="StravaAPILibrary" Version="1.0.0" />
 ```
 
 ## 🔐 Authentication Setup

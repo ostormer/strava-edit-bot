@@ -1,15 +1,14 @@
-﻿using StravaAPILibary.Models.Streams;
+﻿using StravaAPILibrary.Models.Streams;
 
-namespace StravaAPILibary.Models.Streams
+namespace StravaAPILibrary.Models.Streams;
+
+/// <summary>
+/// Represents a stream of smoothed velocity (speed) data points.
+/// </summary>
+public class SmoothVelocityStream : BaseStream
 {
     /// <summary>
-    /// Represents a stream of smoothed velocity (speed) data points.
+    /// The sequence of velocity values, in meters per second.
     /// </summary>
-    public class SmoothVelocityStream : BaseStream
-    {
-        /// <summary>
-        /// The sequence of velocity values, in meters per second.
-        /// </summary>
-        public List<float> Data { get; set; } = new();
-    }
+    public List<float> Data { get; set; } = new();
 }

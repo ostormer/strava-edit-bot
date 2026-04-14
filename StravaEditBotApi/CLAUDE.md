@@ -1,6 +1,6 @@
 # StravaEditBotApi — Agent Guide
 
-ASP.NET Core Web API. See the root `AGENTS.md` for project context and stack overview.
+ASP.NET Core Web API. See the root `CLAUDE.md` for project context and stack overview.
 
 ---
 

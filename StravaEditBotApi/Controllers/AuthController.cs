@@ -47,6 +47,10 @@ public class AuthController(
         user.StravaAccessToken = tokenData.AccessToken;
         user.StravaRefreshToken = tokenData.RefreshToken;
         user.StravaTokenExpiresAt = tokenData.ExpiresAt;
+        user.StravaFirstname = tokenData.Firstname;
+        user.StravaLastname = tokenData.Lastname;
+        user.StravaProfileMedium = tokenData.ProfileMedium;
+        user.StravaProfile = tokenData.Profile;
         await db.SaveChangesAsync();
 
         return await IssueTokensAsync(user);
@@ -119,6 +123,12 @@ public class AuthController(
             MaxAge = _refreshTokenLifetime,
         });
 
-        return Ok(new AuthResponseDto(accessToken));
+        return Ok(new AuthResponseDto(
+            accessToken,
+            user.StravaFirstname ?? string.Empty,
+            user.StravaLastname ?? string.Empty,
+            user.StravaProfileMedium ?? string.Empty,
+            user.StravaProfile ?? string.Empty
+        ));
     }
 }

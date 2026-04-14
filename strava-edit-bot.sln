@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi", "StravaEditBotApi/StravaEditBotApi.csproj", "{CFE84753-332E-DF93-454A-9B5552D0F492}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi", "StravaEditBotApi\StravaEditBotApi.csproj", "{CFE84753-332E-DF93-454A-9B5552D0F492}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi.Tests", "StravaEditBotApi.Tests/StravaEditBotApi.Tests.csproj", "{8B6E8DCB-2F30-45D3-9EE4-CB96B78D7269}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi.Tests", "StravaEditBotApi.Tests\StravaEditBotApi.Tests.csproj", "{8B6E8DCB-2F30-45D3-9EE4-CB96B78D7269}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StravaAPILibrary", "StravaAPILibrary", "{1C6612E3-8444-505D-4A89-55B6A5CDFD4B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaAPILibrary", "StravaAPILibrary\StravaAPILibrary.csproj", "{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,9 +45,24 @@ Global
 		{8B6E8DCB-2F30-45D3-9EE4-CB96B78D7269}.Release|x64.Build.0 = Release|Any CPU
 		{8B6E8DCB-2F30-45D3-9EE4-CB96B78D7269}.Release|x86.ActiveCfg = Release|Any CPU
 		{8B6E8DCB-2F30-45D3-9EE4-CB96B78D7269}.Release|x86.Build.0 = Release|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Debug|x64.Build.0 = Debug|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Debug|x86.Build.0 = Debug|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Release|x64.ActiveCfg = Release|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Release|x64.Build.0 = Release|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Release|x86.ActiveCfg = Release|Any CPU
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5A6C075F-D9B6-4F8B-BAF4-5DD918502638} = {1C6612E3-8444-505D-4A89-55B6A5CDFD4B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2DC267B6-B95C-4870-A7DF-561EF4BB63D8}

@@ -1,6 +1,6 @@
 # StravaEditBotApi.Tests — Agent Guide
 
-Test suite for the API. See `StravaEditBotApi/AGENTS.md` for the code under test.
+Test suite for the API. See `StravaEditBotApi/CLAUDE.md` for the code under test.
 
 ---
 

@@ -4,7 +4,11 @@ public record StravaTokenData(
     long AthleteId,
     string AccessToken,
     string RefreshToken,
-    DateTime ExpiresAt
+    DateTime ExpiresAt,
+    string Firstname = "",
+    string Lastname = "",
+    string ProfileMedium = "",
+    string Profile = ""
 );
 
 public interface IStravaAuthService
