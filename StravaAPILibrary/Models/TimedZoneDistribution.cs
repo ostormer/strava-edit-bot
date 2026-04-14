@@ -1,15 +1,14 @@
 ﻿using System.Collections.Generic;
 
-namespace StravaAPILibary.Models
+namespace StravaAPILibrary.Models;
+
+/// <summary>
+/// Represents a collection of exclusive ranges (zones) and the time spent in each.
+/// </summary>
+public class TimedZoneDistribution
 {
     /// <summary>
-    /// Represents a collection of exclusive ranges (zones) and the time spent in each.
+    /// The list of timed zone ranges.
     /// </summary>
-    public class TimedZoneDistribution
-    {
-        /// <summary>
-        /// The list of timed zone ranges.
-        /// </summary>
-        public List<TimedZoneRange> Zones { get; set; } = new();
-    }
+    public List<TimedZoneRange> Zones { get; set; } = new();
 }

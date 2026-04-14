@@ -1,15 +1,14 @@
-﻿using StravaAPILibary.Models.Streams;
+﻿using StravaAPILibrary.Models.Streams;
 
-namespace StravaAPILibary.Models.Streams
+namespace StravaAPILibrary.Models.Streams;
+
+/// <summary>
+/// Represents a stream of time data points.
+/// </summary>
+public class TimeStream : BaseStream
 {
     /// <summary>
-    /// Represents a stream of time data points.
+    /// The sequence of time values, in seconds.
     /// </summary>
-    public class TimeStream : BaseStream
-    {
-        /// <summary>
-        /// The sequence of time values, in seconds.
-        /// </summary>
-        public List<int> Data { get; set; } = new();
-    }
+    public List<int> Data { get; set; } = new();
 }

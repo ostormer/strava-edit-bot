@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StravaAPILibrary\StravaAPILibary.csproj" />
+    <ProjectReference Include="..\StravaAPILibrary\StravaAPILibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>

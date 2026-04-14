@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaEditBotApi.Tests", "S
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StravaAPILibrary", "StravaAPILibrary", "{1C6612E3-8444-505D-4A89-55B6A5CDFD4B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaAPILibary", "StravaAPILibrary\StravaAPILibary.csproj", "{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StravaAPILibrary", "StravaAPILibrary\StravaAPILibrary.csproj", "{5A6C075F-D9B6-4F8B-BAF4-5DD918502638}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

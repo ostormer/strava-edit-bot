@@ -1,15 +1,14 @@
 ﻿using System.Collections.Generic;
 
-namespace StravaAPILibary.Models.Zones
+namespace StravaAPILibrary.Models.Zones;
+
+/// <summary>
+/// A collection of zone ranges (e.g., heart rate or power zones).
+/// </summary>
+public class ZoneRanges
 {
     /// <summary>
-    /// A collection of zone ranges (e.g., heart rate or power zones).
+    /// A list of individual zone ranges.
     /// </summary>
-    public class ZoneRanges
-    {
-        /// <summary>
-        /// A list of individual zone ranges.
-        /// </summary>
-        public List<ZoneRange> Zones { get; set; } = new List<ZoneRange>();
-    }
+    public List<ZoneRange> Zones { get; set; } = new List<ZoneRange>();
 }

@@ -64,8 +64,8 @@
     "cleanupCacheHistory": false,
     "disableGitFeatures": false,
     "globalMetadata": {
-      "_appName": "StravaAPILibary",
-      "_appTitle": "StravaAPILibary Documentation",
+      "_appName": "StravaAPILibrary",
+      "_appTitle": "StravaAPILibrary Documentation",
       "_enableSearch": true,
       "_enableNewTab": true,
       "_enableContribution": true,
@@ -88,7 +88,7 @@
       "_indexPath": "",
       "_sitePath": "",
       "_baseUrl": "",
-      "_repoUrl": "https://github.com/your-repo/StravaAPILibary",
+      "_repoUrl": "https://github.com/your-repo/StravaAPILibrary",
       "_docfxVersion": "2.75.1.0",
       "pdf": true
     },

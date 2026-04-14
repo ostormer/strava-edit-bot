@@ -1,38 +1,37 @@
-﻿namespace StravaAPILibary.Models.Uploads
+﻿namespace StravaAPILibrary.Models.Uploads;
+
+/// <summary>
+/// Represents the status and details of an upload in Strava.
+/// </summary>
+public class Upload
 {
     /// <summary>
-    /// Represents the status and details of an upload in Strava.
+    /// The unique identifier of the upload.
     /// </summary>
-    public class Upload
-    {
-        /// <summary>
-        /// The unique identifier of the upload.
-        /// </summary>
-        public long Id { get; set; }
+    public long Id { get; set; }
 
-        /// <summary>
-        /// The unique identifier of the upload in string format.
-        /// </summary>
-        public string IdStr { get; set; } = string.Empty;
+    /// <summary>
+    /// The unique identifier of the upload in string format.
+    /// </summary>
+    public string IdStr { get; set; } = string.Empty;
 
-        /// <summary>
-        /// The external identifier of the upload (e.g., original file name or external system reference).
-        /// </summary>
-        public string ExternalId { get; set; } = string.Empty;
+    /// <summary>
+    /// The external identifier of the upload (e.g., original file name or external system reference).
+    /// </summary>
+    public string ExternalId { get; set; } = string.Empty;
 
-        /// <summary>
-        /// The error associated with this upload, if any.
-        /// </summary>
-        public string? Error { get; set; }
+    /// <summary>
+    /// The error associated with this upload, if any.
+    /// </summary>
+    public string? Error { get; set; }
 
-        /// <summary>
-        /// The current status of the upload.
-        /// </summary>
-        public string Status { get; set; } = string.Empty;
+    /// <summary>
+    /// The current status of the upload.
+    /// </summary>
+    public string Status { get; set; } = string.Empty;
 
-        /// <summary>
-        /// The identifier of the activity this upload resulted in.
-        /// </summary>
-        public long? ActivityId { get; set; }
-    }
+    /// <summary>
+    /// The identifier of the activity this upload resulted in.
+    /// </summary>
+    public long? ActivityId { get; set; }
 }

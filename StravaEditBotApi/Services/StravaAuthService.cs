@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
-using StravaAPILibary.Models.Athletes;
+using StravaAPILibrary.Models.Athletes;
 
 namespace StravaEditBotApi.Services;
 

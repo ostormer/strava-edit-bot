@@ -77,4 +77,4 @@ Key methods on `Activities`:
 
 ## Namespace
 
-The namespace is `StravaAPILibary` (note: typo in original, matches project name `StravaAPILibary.csproj`). Do not rename — it would be a breaking change.
+The namespace is `StravaAPILibrary` (note: typo in original, matches project name `StravaAPILibrary.csproj`). Do not rename — it would be a breaking change.
