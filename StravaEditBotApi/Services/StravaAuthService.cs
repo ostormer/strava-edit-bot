@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
+using StravaAPILibary.Models.Athletes;
 
 namespace StravaEditBotApi.Services;
 
@@ -35,8 +36,6 @@ public class StravaAuthService(HttpClient httpClient, IConfiguration configurati
         var json = JsonNode.Parse(body) as JsonObject
             ?? throw new JsonException("Failed to parse Strava token response.");
 
-        long athleteId = json["athlete"]?["id"]?.GetValue<long>()
-            ?? throw new JsonException("athlete.id missing in Strava response.");
         string accessToken = json["access_token"]?.GetValue<string>()
             ?? throw new JsonException("access_token missing in Strava response.");
         string refreshToken = json["refresh_token"]?.GetValue<string>()
@@ -45,6 +44,25 @@ public class StravaAuthService(HttpClient httpClient, IConfiguration configurati
             ?? throw new JsonException("expires_at missing in Strava response.");
         DateTime expiresAt = DateTimeOffset.FromUnixTimeSeconds(expiresAtUnix).UtcDateTime;
 
-        return new StravaTokenData(athleteId, accessToken, refreshToken, expiresAt);
+        var athleteNode = json["athlete"]
+            ?? throw new JsonException("athlete missing in Strava response.");
+        var athlete = athleteNode.Deserialize<SummaryAthlete>()
+            ?? throw new JsonException("Failed to deserialize athlete from Strava response.");
+
+        if (athlete.Id == 0)
+        {
+            throw new JsonException("athlete.id missing in Strava response.");
+        }
+
+        return new StravaTokenData(
+            athlete.Id,
+            accessToken,
+            refreshToken,
+            expiresAt,
+            athlete.Firstname,
+            athlete.Lastname,
+            athlete.ProfileMedium,
+            athlete.Profile
+        );
     }
 }

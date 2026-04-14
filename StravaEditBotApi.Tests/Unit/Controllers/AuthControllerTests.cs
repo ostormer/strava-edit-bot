@@ -56,8 +56,13 @@ public class AuthControllerTests
     private void SetRequestCookie(string value) =>
         _sut.ControllerContext.HttpContext.Request.Headers["Cookie"] = $"refreshToken={value}";
 
-    private StravaTokenData MakeStravaTokenData(long athleteId = 123456) =>
-        new(athleteId, "strava-access", "strava-refresh", DateTime.UtcNow.AddHours(6));
+    private StravaTokenData MakeStravaTokenData(
+        long athleteId = 123456,
+        string firstname = "John",
+        string lastname = "Doe",
+        string profileMedium = "https://example.com/medium.jpg",
+        string profile = "https://example.com/large.jpg") =>
+        new(athleteId, "strava-access", "strava-refresh", DateTime.UtcNow.AddHours(6), firstname, lastname, profileMedium, profile);
 
     private async Task<RefreshToken> SeedActiveTokenAsync(AppUser user, string tokenHash = "valid-hash")
     {
@@ -125,6 +130,53 @@ public class AuthControllerTests
 
         var user = _db.Users.SingleOrDefault(u => u.StravaAthleteId == 999);
         Assert.That(user, Is.Not.Null);
+    }
+
+    [Test]
+    public async Task StravaCallback_NewUser_StoresProfileFieldsOnUser()
+    {
+        var tokenData = MakeStravaTokenData(
+            athleteId: 999,
+            firstname: "Jane",
+            lastname: "Smith",
+            profileMedium: "https://example.com/medium.jpg",
+            profile: "https://example.com/large.jpg");
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>()).Returns(tokenData);
+        SetupTokenService();
+
+        await _sut.StravaCallbackAsync(new StravaCallbackDto("auth-code"));
+
+        var user = _db.Users.Single(u => u.StravaAthleteId == 999);
+        Assert.Multiple(() =>
+        {
+            Assert.That(user.StravaFirstname, Is.EqualTo("Jane"));
+            Assert.That(user.StravaLastname, Is.EqualTo("Smith"));
+            Assert.That(user.StravaProfileMedium, Is.EqualTo("https://example.com/medium.jpg"));
+            Assert.That(user.StravaProfile, Is.EqualTo("https://example.com/large.jpg"));
+        });
+    }
+
+    [Test]
+    public async Task StravaCallback_NewUser_ReturnsProfileFieldsInResponse()
+    {
+        var tokenData = MakeStravaTokenData(
+            firstname: "Jane",
+            lastname: "Smith",
+            profileMedium: "https://example.com/medium.jpg",
+            profile: "https://example.com/large.jpg");
+        _stravaAuthService.ExchangeCodeAsync(Arg.Any<string>()).Returns(tokenData);
+        SetupTokenService();
+
+        var result = await _sut.StravaCallbackAsync(new StravaCallbackDto("auth-code"));
+
+        var dto = (AuthResponseDto)((OkObjectResult)result).Value!;
+        Assert.Multiple(() =>
+        {
+            Assert.That(dto.Firstname, Is.EqualTo("Jane"));
+            Assert.That(dto.Lastname, Is.EqualTo("Smith"));
+            Assert.That(dto.ProfileMedium, Is.EqualTo("https://example.com/medium.jpg"));
+            Assert.That(dto.Profile, Is.EqualTo("https://example.com/large.jpg"));
+        });
     }
 
     [Test]

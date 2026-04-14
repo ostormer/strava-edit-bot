@@ -205,8 +205,52 @@ public class StravaAuthServiceTests
     // Helpers
     // ========================================================
 
+    [Test]
+    public async Task ExchangeCodeAsync_ValidResponse_ReturnsCorrectFirstname()
+    {
+        BuildSut(MakeSuccessResponse(firstName: "Jane"));
+
+        var result = await _sut.ExchangeCodeAsync("auth-code");
+
+        Assert.That(result.Firstname, Is.EqualTo("Jane"));
+    }
+
+    [Test]
+    public async Task ExchangeCodeAsync_ValidResponse_ReturnsCorrectLastname()
+    {
+        BuildSut(MakeSuccessResponse(lastName: "Smith"));
+
+        var result = await _sut.ExchangeCodeAsync("auth-code");
+
+        Assert.That(result.Lastname, Is.EqualTo("Smith"));
+    }
+
+    [Test]
+    public async Task ExchangeCodeAsync_ValidResponse_ReturnsCorrectProfileMedium()
+    {
+        BuildSut(MakeSuccessResponse(profileMedium: "https://example.com/medium.jpg"));
+
+        var result = await _sut.ExchangeCodeAsync("auth-code");
+
+        Assert.That(result.ProfileMedium, Is.EqualTo("https://example.com/medium.jpg"));
+    }
+
+    [Test]
+    public async Task ExchangeCodeAsync_ValidResponse_ReturnsCorrectProfile()
+    {
+        BuildSut(MakeSuccessResponse(profile: "https://example.com/large.jpg"));
+
+        var result = await _sut.ExchangeCodeAsync("auth-code");
+
+        Assert.That(result.Profile, Is.EqualTo("https://example.com/large.jpg"));
+    }
+
     private static HttpResponseMessage MakeSuccessResponse(
         long athleteId = 12345L,
+        string firstName = "John",
+        string lastName = "Doe",
+        string profileMedium = "https://example.com/medium.jpg",
+        string profile = "https://example.com/large.jpg",
         string accessToken = "test-access-token",
         string refreshToken = "test-refresh-token",
         long expiresAt = 1700000000L,
@@ -219,7 +263,14 @@ public class StravaAuthServiceTests
 
         if (includeAthleteId)
         {
-            obj["athlete"] = new Dictionary<string, object?> { ["id"] = athleteId };
+            obj["athlete"] = new Dictionary<string, object?>
+            {
+                ["id"] = athleteId,
+                ["firstname"] = firstName,
+                ["lastname"] = lastName,
+                ["profile_medium"] = profileMedium,
+                ["profile"] = profile,
+            };
         }
 
         if (includeAccessToken)
