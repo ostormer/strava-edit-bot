@@ -22,10 +22,10 @@ A bot that lets users bulk-edit their Strava activity names, descriptions, and m
 
 ```
 StravaEditBotApi/          # ASP.NET Core Web API       → StravaEditBotApi/CLAUDE.md
-StravaEditBotApi.Tests/    # NUnit test suite            → StravaEditBotApi.Tests/AGENTS.md
+StravaEditBotApi.Tests/    # NUnit test suite            → StravaEditBotApi.Tests/CLAUDE.md
 StravaAPILibrary/          # Strava API client library   → StravaAPILibrary/CLAUDE.md
-strava-edit-bot-ui/        # React frontend              → strava-edit-bot-ui/AGENTS.md
-infrastructure/            # Bicep IaC                   → infrastructure/AGENTS.md
+strava-edit-bot-ui/        # React frontend              → strava-edit-bot-ui/CLAUDE.md
+infrastructure/            # Bicep IaC                   → infrastructure/CLAUDE.md
 bruno/                     # Bruno API collection for manual testing
 docs/                      # Architecture docs
   auth.md                  # Auth design, token model, swimlane diagrams → docs/auth.md

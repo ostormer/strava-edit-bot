@@ -1,6 +1,6 @@
 # strava-edit-bot-ui — Agent Guide
 
-React frontend. See the root `AGENTS.md` for project context and stack overview.
+React frontend. See the root `CLAUDE.md` for project context and stack overview.
 
 ---
 
