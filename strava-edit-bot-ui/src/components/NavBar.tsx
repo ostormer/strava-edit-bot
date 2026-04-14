@@ -12,7 +12,7 @@ export function NavBar() {
   const { data: user, isLoading } = useCurrentUser()
 
   return (
-    <header className="flex h-14 items-center justify-between border-b-2 border-border bg-secondary-background px-6 text-left">
+    <header className="flex h-14 items-center justify-between border-b-4 border-border bg-secondary-background px-6 text-left">
       <Link to="/" className="font-heading font-black text-base">
         Strava Edit Bot
       </Link>
