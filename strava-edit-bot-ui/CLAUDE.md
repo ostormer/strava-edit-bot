@@ -49,6 +49,8 @@ Dark mode uses the `.dark` class (not `prefers-color-scheme` media query).
 
 Tailwind tokens are mapped via `@theme inline` — use utility classes like `bg-background`, `text-foreground`, `bg-main`, `shadow-shadow` in components.
 
+ALWAYS keep in mind responsive design using standard tailwind breakpoints. Design around the `md` (768px) breakpoint.
+
 **Adding a component**: `npx shadcn@latest add <component>`, then replace the generated styles with the Neobrutalism variant from neobrutalism.dev.
 
 ---

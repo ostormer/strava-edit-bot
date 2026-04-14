@@ -22,8 +22,8 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary-background bg-grid">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-background bg-grid">
+      <Card className="w-full max-w-sm bg-secondary-background">
         <CardHeader>
           <CardTitle className="title">Sign in</CardTitle>
           <CardDescription>Connect your Strava account to get started.</CardDescription>
