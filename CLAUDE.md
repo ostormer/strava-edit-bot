@@ -21,8 +21,9 @@ A bot that lets users bulk-edit their Strava activity names, descriptions, and m
 ## Repo structure
 
 ```
-StravaEditBotApi/          # ASP.NET Core Web API       → StravaEditBotApi/AGENTS.md
+StravaEditBotApi/          # ASP.NET Core Web API       → StravaEditBotApi/CLAUDE.md
 StravaEditBotApi.Tests/    # NUnit test suite            → StravaEditBotApi.Tests/AGENTS.md
+StravaAPILibrary/          # Strava API client library   → StravaAPILibrary/CLAUDE.md
 strava-edit-bot-ui/        # React frontend              → strava-edit-bot-ui/AGENTS.md
 infrastructure/            # Bicep IaC                   → infrastructure/AGENTS.md
 bruno/                     # Bruno API collection for manual testing
