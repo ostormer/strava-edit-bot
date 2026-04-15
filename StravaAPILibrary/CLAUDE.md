@@ -72,9 +72,3 @@ Key methods on `Activities`:
 4. `RefreshAccessTokenAsync()` — uses the refresh token to get a new access token
 
 `Credentials` holds `ClientId`, `ClientSecret`, `Scope`, `AccessToken`, `RefreshToken`, and `TokenExpiration` (`DateTime`). Access tokens expire after 6 hours; refresh tokens do not expire unless revoked.
-
----
-
-## Namespace
-
-The namespace is `StravaAPILibrary` (note: typo in original, matches project name `StravaAPILibrary.csproj`). Do not rename — it would be a breaking change.
