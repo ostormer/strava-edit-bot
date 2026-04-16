@@ -1,3 +1,5 @@
 {
-    "dotnet.defaultSolution": "strava-edit-bot.sln"
+    "dotnet.defaultSolution": "strava-edit-bot.sln",
+    "css.validate": false,
+    "scss.validate": false
 }

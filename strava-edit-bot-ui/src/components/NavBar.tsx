@@ -8,16 +8,42 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 
+const navLinkClass =
+  'flex h-full items-center px-4 font-medium text-sm transition-all duration-150 [&>span]:transition-transform [&>span]:duration-150 hover:shadow-[inset_2px_2px_0px_0px_var(--border)] hover:[&>span]:translate-x-[2px] hover:[&>span]:translate-y-[2px]'
+const navLinkActiveClass =
+  'bg-main shadow-[inset_4px_4px_0px_0px_var(--border)] [&>span]:translate-x-[4px] [&>span]:translate-y-[4px] hover:shadow-[inset_4px_4px_0px_0px_var(--border)] hover:[&>span]:translate-x-[4px] hover:[&>span]:translate-y-[4px]'
+
 export function NavBar() {
   const { data: user, isLoading } = useCurrentUser()
 
   return (
-    <header className="flex h-14 items-center justify-between border-b-4 border-border bg-secondary-background px-6 text-left">
-      <Link to="/" className="font-heading font-black text-base">
-        Strava Edit Bot
-      </Link>
+    <header className="flex h-14 items-center justify-between border-b-4 border-border bg-secondary-background text-left">
+      <div className="flex h-full items-center">
+        <Link to="/" className="px-6 font-heading font-black text-base">
+          Strava Edit Bot
+        </Link>
 
-      <div>
+        {!isLoading && user && (
+          <>
+            <Link
+              to="/activities"
+              className={navLinkClass}
+              activeProps={{ className: navLinkActiveClass }}
+            >
+              <span>My Activities</span>
+            </Link>
+            <Link
+              to="/rules"
+              className={navLinkClass}
+              activeProps={{ className: navLinkActiveClass }}
+            >
+              <span>My Rules</span>
+            </Link>
+          </>
+        )}
+      </div>
+
+      <div className="px-6">
         {isLoading && (
           <Button disabled className="w-36 animate-pulse" />
         )}
