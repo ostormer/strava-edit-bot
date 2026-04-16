@@ -187,7 +187,13 @@ When an athlete revokes access to the app on Strava, a webhook event fires:
 }
 ```
 
-The app responds by nulling out the user's stored Strava tokens (`StravaAccessToken`, `StravaRefreshToken`, `StravaTokenExpiresAt`). The user's account and app tokens are preserved — they can re-authorize Strava at any time.
+The app responds by:
+
+1. Clearing all Strava data on the user (`StravaAccessToken`, `StravaRefreshToken`, `StravaTokenExpiresAt`, `StravaFirstname`, `StravaLastname`, `StravaProfileMedium`, `StravaProfile`)
+2. Revoking all active app refresh tokens — this forces the user out of any active sessions
+3. Keeping `StravaAthleteId` intact — this is the link that lets re-authorization find the same `AppUser` instead of creating a duplicate account
+
+After deauthorization, the user can re-authorize by going through the normal Strava OAuth flow again. The existing `AuthController.StravaCallbackAsync` handles this: it finds the user by `StravaAthleteId` and repopulates all Strava fields.
 
 ---
 
