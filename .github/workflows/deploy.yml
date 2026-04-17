@@ -102,7 +102,6 @@ jobs:
             --format markdown:diff-coverage-results.md \
             --fail-under=80) || DIFF_RESULT=$?
           sed -i 's/staged and unstaged changes/new and changed lines/' diff-coverage-results.md
-          sed -i 's/: Missing lines.*//' diff-coverage-results.md
           sed -i '/^## StravaEditBotApi\//,$d' diff-coverage-results.md
           # Show "all covered" only when diff-cover reports no coverage line at all
           # (empty diff) or explicitly reports 100% — not unconditionally.
