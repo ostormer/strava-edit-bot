@@ -1,0 +1,29 @@
+meta {
+  name: Athlete Deauthorize Event
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/webhook
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "object_type": "athlete",
+    "object_id": {{stravaAthleteId}},
+    "aspect_type": "update",
+    "updates": {
+      "authorized": "false"
+    },
+    "owner_id": {{stravaAthleteId}},
+    "subscription_id": 999999,
+    "event_time": 1516126040
+  }
+}

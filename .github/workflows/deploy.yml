@@ -97,16 +97,16 @@ jobs:
           git fetch --unshallow
           git fetch origin main
           pip install diff-cover --quiet
-          diff-cover coverage/**/coverage.cobertura.xml \
+          DIFF_TEXT=$(diff-cover coverage/**/coverage.cobertura.xml \
             --compare-branch=origin/main \
             --format markdown:diff-coverage-results.md \
-            --fail-under=80 || DIFF_RESULT=$?
+            --fail-under=80) || DIFF_RESULT=$?
           sed -i 's/staged and unstaged changes/new and changed lines/' diff-coverage-results.md
-          sed -i '/^\|.*\|\s*100%\s*\|/d' diff-coverage-results.md
-          sed -i '/^| ---/a _Files at 100% diff coverage are not shown._' diff-coverage-results.md
-          if ! grep -q '^\| ' diff-coverage-results.md; then
-            sed -i '/^| /d' diff-coverage-results.md
-            sed -i '/^_Files at/d' diff-coverage-results.md
+          sed -i '/^## StravaEditBotApi\//,$d' diff-coverage-results.md
+          # Show "all covered" only when diff-cover reports no coverage line at all
+          # (empty diff) or explicitly reports 100% — not unconditionally.
+          if ! echo "$DIFF_TEXT" | grep -qE '^Coverage: [0-9]+%' || \
+             echo "$DIFF_TEXT" | grep -q '^Coverage: 100%'; then
             echo '_All changed lines are covered._' >> diff-coverage-results.md
           fi
           cat diff-coverage-results.md > combined-coverage-results.md

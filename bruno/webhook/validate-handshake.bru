@@ -1,0 +1,11 @@
+meta {
+  name: Validate Handshake
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/webhook?hub.mode=subscribe&hub.challenge=test-challenge-abc123&hub.verify_token={{webhookVerifyToken}}
+  body: none
+  auth: none
+}

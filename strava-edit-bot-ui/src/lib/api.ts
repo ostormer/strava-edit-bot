@@ -44,7 +44,13 @@ api.interceptors.response.use(
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
     // Only attempt refresh on 401 and only once per request.
-    if (error.response?.status !== 401 || original._retry) {
+    // Never intercept the refresh endpoint itself — that would deadlock
+    // (the queued refresh waits for the in-flight refresh to complete).
+    if (
+      error.response?.status !== 401 ||
+      original._retry ||
+      original.url === '/api/auth/refresh'
+    ) {
       return Promise.reject(error)
     }
 

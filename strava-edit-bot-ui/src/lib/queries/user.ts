@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import api from '@/lib/api'
+import { isAxiosError } from 'axios'
 
 export interface CurrentUser {
   firstname: string
@@ -8,9 +9,19 @@ export interface CurrentUser {
   profile: string
 }
 
-async function fetchCurrentUser(): Promise<CurrentUser> {
-  const { data } = await api.get<CurrentUser>('/api/users/me')
-  return data
+async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  try {
+    const { data } = await api.get<CurrentUser>('/api/users/me')
+    return data
+  } catch (error) {
+    // 401 means the session is gone (refresh already attempted by the Axios
+    // interceptor). Return null so the query resolves with "no user" instead
+    // of staying stuck in pending/error state forever.
+    if (isAxiosError(error) && error.response?.status === 401) {
+      return null
+    }
+    throw error
+  }
 }
 
 export const currentUserQueryOptions = queryOptions({

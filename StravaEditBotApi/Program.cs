@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.Channels;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StravaEditBotApi.Data;
+using StravaEditBotApi.DTOs;
 using StravaEditBotApi.Middleware;
 using StravaEditBotApi.Models;
 using StravaEditBotApi.Services;
@@ -90,6 +92,14 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddHttpClient<IStravaAuthService, StravaAuthService>();
+
+// Webhook infrastructure
+var webhookChannel = Channel.CreateUnbounded<StravaWebhookEventDto>();
+builder.Services.AddSingleton(webhookChannel);
+builder.Services.AddSingleton(webhookChannel.Reader);
+builder.Services.AddSingleton(webhookChannel.Writer);
+builder.Services.AddScoped<IWebhookService, WebhookService>();
+builder.Services.AddHostedService<WebhookBackgroundService>();
 
 var app = builder.Build();
 
