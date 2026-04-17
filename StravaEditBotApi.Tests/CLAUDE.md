@@ -28,7 +28,6 @@ Unit/
 Integration/
   WebAppFactory.cs                  # boots the full app with InMemory DB
   TestAuthHandler.cs                # overrides auth scheme to auto-authenticate
-  ActivitiesIntegrationTests.cs
   AuthIntegrationTests.cs
 ```
 
@@ -40,16 +39,16 @@ Integration/
 
 ```csharp
 [TestFixture]
-public class ActivitiesControllerTests
+public class FooControllerTests
 {
-    private IActivityService _service = null!;
-    private ActivitiesController _sut = null!;
+    private IFooService _service = null!;
+    private FooController _sut = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _service = Substitute.For<IActivityService>();
-        _sut = new ActivitiesController(_service, Substitute.For<ILogger<ActivitiesController>>());
+        _service = Substitute.For<IFooService>();
+        _sut = new FooController(_service, Substitute.For<ILogger<FooController>>());
     }
 }
 ```
@@ -64,7 +63,7 @@ public void SetUp()
         .UseInMemoryDatabase(Guid.NewGuid().ToString())
         .Options;
     _context = new AppDbContext(options);
-    _sut = new ActivityService(_context);
+    _sut = new FooService(_context);
 }
 ```
 
@@ -72,8 +71,8 @@ public void SetUp()
 
 ```csharp
 sub.GetAsync(1).Returns(someObject);
-sub.GetByIdAsync(999).Returns((Activity?)null);
-sub.Received(1).CreateAsync(Arg.Any<CreateActivityDto>());
+sub.GetByIdAsync(999).Returns((Foo?)null);
+sub.Received(1).CreateAsync(Arg.Any<CreateFooDto>());
 sub.DidNotReceive().DeleteAsync(999);
 ```
 

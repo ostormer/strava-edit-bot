@@ -8,16 +8,15 @@ ASP.NET Core Web API. See the root `CLAUDE.md` for project context and stack ove
 
 ```
 Controllers/
-  ActivitiesController.cs             # CRUD for activities
   AuthController.cs                   # /strava/callback, /refresh, /logout
 Services/
-  IActivityService / ActivityService
   ITokenService / TokenService        # JWT minting + refresh token crypto
   IStravaAuthService / StravaAuthService  # Strava OAuth token exchange
-DTOs/                                 # Records: CreateActivityDto, UpdateActivityDto,
-                                      #          StravaCallbackDto, AuthResponseDto
+  IWebhookService / WebhookService    # Strava webhook event processing
+  WebhookBackgroundService            # hosted service draining the webhook channel
+DTOs/                                 # Records: StravaCallbackDto, AuthResponseDto,
+                                      #          StravaWebhookEventDto
 Models/
-  Activity.cs
   AppUser.cs        # extends IdentityUser
   RefreshToken.cs   # TokenHash (SHA-256), ExpiresAt, RevokedAt, IsActive
 Validators/         # FluentValidation AbstractValidator<T> — one per DTO
@@ -37,7 +36,7 @@ Migrations/         # EF Core migrations — do not edit by hand
 - **Interface-driven services**: every service has `IXxxService`. Register and inject via the interface.
 - **Primary constructor injection**: `public class Foo(IBar bar) { }`
 - **Async all the way**: all I/O is `async Task<T>`. Never `.Result` or `.Wait()`.
-- **DTOs separate from entities**: use records for all DTOs. Do not return EF entities from controllers (currently `Activity` is returned directly — known issue).
+- **DTOs separate from entities**: use records for all DTOs. Do not return EF entities from controllers.
 
 ---
 

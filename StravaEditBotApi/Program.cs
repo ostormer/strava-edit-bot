@@ -89,7 +89,6 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 // Custom services
-builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddHttpClient<IStravaAuthService, StravaAuthService>();
 
