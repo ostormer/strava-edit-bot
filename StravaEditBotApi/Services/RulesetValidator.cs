@@ -8,7 +8,7 @@ public class RulesetValidator : IRulesetValidator
     private const int MaxDepth = 10;
 
     // Known check properties and their valid operators
-    private static readonly Dictionary<string, HashSet<string>> ValidOperators = new()
+    private static readonly Dictionary<string, HashSet<string>> _validOperators = new()
     {
         ["sport_type"]              = ["in", "not_in"],
         ["workout_type"]            = ["in", "not_in"],
@@ -40,24 +40,24 @@ public class RulesetValidator : IRulesetValidator
         ["athlete_count"]           = ["gt", "lt", "gte", "lte"],
     };
 
-    private static readonly HashSet<string> BoolProperties =
+    private static readonly HashSet<string> _boolProperties =
     [
         "has_location_data", "has_power_meter", "is_commute", "is_trainer", "is_manual", "is_private"
     ];
 
-    private static readonly HashSet<string> NumericProperties =
+    private static readonly HashSet<string> _numericProperties =
     [
         "distance_meters", "elapsed_time_seconds", "moving_time_seconds", "stopped_time_seconds",
         "total_elevation_gain", "elev_high", "elevation_per_km", "average_speed", "max_speed",
         "average_watts", "athlete_count"
     ];
 
-    private static readonly HashSet<string> StringArrayProperties =
+    private static readonly HashSet<string> _stringArrayProperties =
     [
         "sport_type", "gear_id", "day_of_week"
     ];
 
-    private static readonly HashSet<string> IntArrayProperties =
+    private static readonly HashSet<string> _intArrayProperties =
     [
         "workout_type", "month"
     ];
@@ -141,7 +141,7 @@ public class RulesetValidator : IRulesetValidator
             return;
         }
 
-        if (!ValidOperators.TryGetValue(check.Property, out HashSet<string>? allowedOps))
+        if (!_validOperators.TryGetValue(check.Property, out HashSet<string>? allowedOps))
         {
             errors.Add(new RulesetValidationError($"{path}.property", "unknown_property",
                 $"Unknown property '{check.Property}'."));
@@ -179,7 +179,7 @@ public class RulesetValidator : IRulesetValidator
         var value = check.Value!.Value;
 
         // Boolean properties
-        if (BoolProperties.Contains(property) || op == "is_null")
+        if (_boolProperties.Contains(property) || op == "is_null")
         {
             if (value.ValueKind is not (System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False))
             {
@@ -190,7 +190,7 @@ public class RulesetValidator : IRulesetValidator
         }
 
         // Numeric properties
-        if (NumericProperties.Contains(property))
+        if (_numericProperties.Contains(property))
         {
             if (value.ValueKind != System.Text.Json.JsonValueKind.Number)
             {
@@ -201,7 +201,7 @@ public class RulesetValidator : IRulesetValidator
         }
 
         // String array properties with in/not_in
-        if (StringArrayProperties.Contains(property) && (op == "in" || op == "not_in"))
+        if (_stringArrayProperties.Contains(property) && (op == "in" || op == "not_in"))
         {
             if (value.ValueKind != System.Text.Json.JsonValueKind.Array)
             {
@@ -223,7 +223,7 @@ public class RulesetValidator : IRulesetValidator
         }
 
         // Int array properties
-        if (IntArrayProperties.Contains(property))
+        if (_intArrayProperties.Contains(property))
         {
             if (value.ValueKind != System.Text.Json.JsonValueKind.Array)
             {

@@ -11,7 +11,7 @@ public class CustomVariableService(AppDbContext db) : ICustomVariableService
     private const int MaxVariablesPerUser = 50;
 
     // Reserved built-in variable names that users cannot override
-    private static readonly HashSet<string> BuiltInVariables =
+    private static readonly HashSet<string> _builtInVariables =
     [
         "original_name", "sport_type", "gear_id", "workout_type",
         "distance_km", "distance_mi", "distance_m",
@@ -46,7 +46,7 @@ public class CustomVariableService(AppDbContext db) : ICustomVariableService
     public async Task<(CustomVariableResponseDto? Result, string? Error)> CreateAsync(
         string userId, CreateCustomVariableDto dto, CancellationToken ct = default)
     {
-        if (BuiltInVariables.Contains(dto.Name))
+        if (_builtInVariables.Contains(dto.Name))
         {
             return (null, $"'{dto.Name}' is a reserved built-in variable name.");
         }

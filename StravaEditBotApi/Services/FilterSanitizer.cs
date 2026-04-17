@@ -4,7 +4,7 @@ namespace StravaEditBotApi.Services;
 
 public class FilterSanitizer : IFilterSanitizer
 {
-    private static readonly HashSet<string> SanitizedProperties =
+    private static readonly HashSet<string> _sanitizedProperties =
     [
         "start_location",
         "end_location",
@@ -38,7 +38,7 @@ public class FilterSanitizer : IFilterSanitizer
                 return new NotFilter(SanitizeNode(not.Condition, sanitized));
 
             case CheckFilter check:
-                if (check.Property is not null && SanitizedProperties.Contains(check.Property))
+                if (check.Property is not null && _sanitizedProperties.Contains(check.Property))
                 {
                     if (!sanitized.Contains(check.Property))
                     {

@@ -18,17 +18,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<CustomVariable> CustomVariables => Set<CustomVariable>();
 
     // Value comparer for collection-type JSON columns so EF Core detects changes correctly.
-    private static readonly ValueComparer<Dictionary<string, string>> DictComparer = new(
-        (a, b) => JsonSerializer.Serialize(a, JsonOptions) == JsonSerializer.Serialize(b, JsonOptions),
-        v => JsonSerializer.Serialize(v, JsonOptions).GetHashCode(),
-        v => JsonSerializer.Deserialize<Dictionary<string, string>>(JsonSerializer.Serialize(v, JsonOptions), JsonOptions)!);
+    private static readonly ValueComparer<Dictionary<string, string>> _dictComparer = new(
+        (a, b) => JsonSerializer.Serialize(a, _jsonOptions) == JsonSerializer.Serialize(b, _jsonOptions),
+        v => JsonSerializer.Serialize(v, _jsonOptions).GetHashCode(),
+        v => JsonSerializer.Deserialize<Dictionary<string, string>>(JsonSerializer.Serialize(v, _jsonOptions), _jsonOptions)!);
 
-    private static readonly ValueComparer<List<CustomVariableDefinition>> BundledVarsComparer = new(
-        (a, b) => JsonSerializer.Serialize(a, JsonOptions) == JsonSerializer.Serialize(b, JsonOptions),
-        v => JsonSerializer.Serialize(v, JsonOptions).GetHashCode(),
-        v => JsonSerializer.Deserialize<List<CustomVariableDefinition>>(JsonSerializer.Serialize(v, JsonOptions), JsonOptions)!);
+    private static readonly ValueComparer<List<CustomVariableDefinition>> _bundledVarsComparer = new(
+        (a, b) => JsonSerializer.Serialize(a, _jsonOptions) == JsonSerializer.Serialize(b, _jsonOptions),
+        v => JsonSerializer.Serialize(v, _jsonOptions).GetHashCode(),
+        v => JsonSerializer.Deserialize<List<CustomVariableDefinition>>(JsonSerializer.Serialize(v, _jsonOptions), _jsonOptions)!);
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -54,14 +54,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(r => r.Filter)
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
-                    v => v == null ? null : JsonSerializer.Serialize(v, JsonOptions),
-                    v => v == null ? null : JsonSerializer.Deserialize<FilterExpression>(v, JsonOptions));
+                    v => v == null ? null : JsonSerializer.Serialize(v, _jsonOptions),
+                    v => v == null ? null : JsonSerializer.Deserialize<FilterExpression>(v, _jsonOptions));
 
             entity.Property(r => r.Effect)
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
-                    v => v == null ? null : JsonSerializer.Serialize(v, JsonOptions),
-                    v => v == null ? null : JsonSerializer.Deserialize<RulesetEffect>(v, JsonOptions));
+                    v => v == null ? null : JsonSerializer.Serialize(v, _jsonOptions),
+                    v => v == null ? null : JsonSerializer.Deserialize<RulesetEffect>(v, _jsonOptions));
 
             entity.HasOne(r => r.User)
                 .WithMany(u => u.Rulesets)
@@ -88,21 +88,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(t => t.Filter)
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
-                    v => v == null ? null : JsonSerializer.Serialize(v, JsonOptions),
-                    v => v == null ? null : JsonSerializer.Deserialize<FilterExpression>(v, JsonOptions));
+                    v => v == null ? null : JsonSerializer.Serialize(v, _jsonOptions),
+                    v => v == null ? null : JsonSerializer.Deserialize<FilterExpression>(v, _jsonOptions));
 
             entity.Property(t => t.Effect)
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
-                    v => v == null ? null : JsonSerializer.Serialize(v, JsonOptions),
-                    v => v == null ? null : JsonSerializer.Deserialize<RulesetEffect>(v, JsonOptions));
+                    v => v == null ? null : JsonSerializer.Serialize(v, _jsonOptions),
+                    v => v == null ? null : JsonSerializer.Deserialize<RulesetEffect>(v, _jsonOptions));
 
             entity.Property(t => t.BundledVariables)
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
-                    v => v == null ? null : JsonSerializer.Serialize(v, JsonOptions),
-                    v => v == null ? null : JsonSerializer.Deserialize<List<CustomVariableDefinition>>(v, JsonOptions))
-                .Metadata.SetValueComparer(BundledVarsComparer);
+                    v => v == null ? null : JsonSerializer.Serialize(v, _jsonOptions),
+                    v => v == null ? null : JsonSerializer.Deserialize<List<CustomVariableDefinition>>(v, _jsonOptions))
+                .Metadata.SetValueComparer(_bundledVarsComparer);
 
             entity.HasOne(t => t.CreatedByUser)
                 .WithMany(u => u.RulesetTemplates)
@@ -123,9 +123,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(r => r.FieldsChanged)
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
-                    v => v == null ? null : JsonSerializer.Serialize(v, JsonOptions),
-                    v => v == null ? null : JsonSerializer.Deserialize<Dictionary<string, string>>(v, JsonOptions))
-                .Metadata.SetValueComparer(DictComparer);
+                    v => v == null ? null : JsonSerializer.Serialize(v, _jsonOptions),
+                    v => v == null ? null : JsonSerializer.Deserialize<Dictionary<string, string>>(v, _jsonOptions))
+                .Metadata.SetValueComparer(_dictComparer);
 
             entity.HasOne(r => r.User)
                 .WithMany(u => u.RulesetRuns)
@@ -153,8 +153,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(cv => cv.Definition)
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
-                    v => JsonSerializer.Serialize(v, JsonOptions),
-                    v => JsonSerializer.Deserialize<CustomVariableDefinition>(v, JsonOptions)!);
+                    v => JsonSerializer.Serialize(v, _jsonOptions),
+                    v => JsonSerializer.Deserialize<CustomVariableDefinition>(v, _jsonOptions)!);
 
             entity.HasOne(cv => cv.User)
                 .WithMany(u => u.CustomVariables)
