@@ -10,34 +10,34 @@ public class RulesetValidator : IRulesetValidator
     // Known check properties and their valid operators
     private static readonly Dictionary<string, HashSet<string>> _validOperators = new()
     {
-        ["sport_type"]              = ["in", "not_in"],
-        ["workout_type"]            = ["in", "not_in"],
-        ["gear_id"]                 = ["eq", "not_eq", "in", "not_in", "is_null"],
-        ["start_location"]          = ["within_radius"],
-        ["end_location"]            = ["within_radius"],
-        ["has_location_data"]       = ["eq"],
-        ["timezone"]                = ["eq", "contains"],
-        ["start_time"]              = ["after", "before"],
-        ["day_of_week"]             = ["in", "not_in"],
-        ["month"]                   = ["in", "not_in"],
-        ["distance_meters"]         = ["gt", "lt", "gte", "lte"],
-        ["elapsed_time_seconds"]    = ["gt", "lt", "gte", "lte"],
-        ["moving_time_seconds"]     = ["gt", "lt", "gte", "lte"],
-        ["stopped_time_seconds"]    = ["gt", "lt", "gte", "lte"],
-        ["total_elevation_gain"]    = ["gt", "lt", "gte", "lte"],
-        ["elev_high"]               = ["gt", "lt", "gte", "lte"],
-        ["elevation_per_km"]        = ["gt", "lt", "gte", "lte"],
-        ["average_speed"]           = ["gt", "lt", "gte", "lte"],
-        ["max_speed"]               = ["gt", "lt", "gte", "lte"],
-        ["average_watts"]           = ["gt", "lt", "gte", "lte"],
-        ["has_power_meter"]         = ["eq"],
-        ["is_commute"]              = ["eq"],
-        ["is_trainer"]              = ["eq"],
-        ["is_manual"]               = ["eq"],
-        ["is_private"]              = ["eq"],
-        ["name"]                    = ["contains", "starts_with", "matches_regex"],
-        ["description"]             = ["contains", "starts_with", "matches_regex", "is_empty"],
-        ["athlete_count"]           = ["gt", "lt", "gte", "lte"],
+        ["sport_type"] = ["in", "not_in"],
+        ["workout_type"] = ["in", "not_in"],
+        ["gear_id"] = ["eq", "not_eq", "in", "not_in", "is_null"],
+        ["start_location"] = ["within_radius"],
+        ["end_location"] = ["within_radius"],
+        ["has_location_data"] = ["eq"],
+        ["timezone"] = ["eq", "contains"],
+        ["start_time"] = ["after", "before"],
+        ["day_of_week"] = ["in", "not_in"],
+        ["month"] = ["in", "not_in"],
+        ["distance_meters"] = ["gt", "lt", "gte", "lte"],
+        ["elapsed_time_seconds"] = ["gt", "lt", "gte", "lte"],
+        ["moving_time_seconds"] = ["gt", "lt", "gte", "lte"],
+        ["stopped_time_seconds"] = ["gt", "lt", "gte", "lte"],
+        ["total_elevation_gain"] = ["gt", "lt", "gte", "lte"],
+        ["elev_high"] = ["gt", "lt", "gte", "lte"],
+        ["elevation_per_km"] = ["gt", "lt", "gte", "lte"],
+        ["average_speed"] = ["gt", "lt", "gte", "lte"],
+        ["max_speed"] = ["gt", "lt", "gte", "lte"],
+        ["average_watts"] = ["gt", "lt", "gte", "lte"],
+        ["has_power_meter"] = ["eq"],
+        ["is_commute"] = ["eq"],
+        ["is_trainer"] = ["eq"],
+        ["is_manual"] = ["eq"],
+        ["is_private"] = ["eq"],
+        ["name"] = ["contains", "starts_with", "matches_regex"],
+        ["description"] = ["contains", "starts_with", "matches_regex", "is_empty"],
+        ["athlete_count"] = ["gt", "lt", "gte", "lte"],
     };
 
     private static readonly HashSet<string> _boolProperties =
@@ -323,6 +323,10 @@ public class RulesetValidator : IRulesetValidator
         }
         catch (ArgumentException)
         {
+            return false;
+        }
+        catch (RegexMatchTimeoutException)
+        { // TODO: Consider reporting this as a separate "regex_too_complex" error instead of just invalid.
             return false;
         }
     }
