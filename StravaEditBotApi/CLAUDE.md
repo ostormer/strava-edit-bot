@@ -8,23 +8,49 @@ ASP.NET Core Web API. See the root `CLAUDE.md` for project context and stack ove
 
 ```
 Controllers/
-  AuthController.cs                   # /strava/callback, /refresh, /logout
+  AuthController.cs                   # /api/auth — /strava/callback, /refresh, /logout
+  UsersController.cs                  # /api/users — /me
+  WebhookController.cs                # /api/webhook — GET (handshake), POST (events)
+  RulesetsController.cs               # /api/rulesets — CRUD, reorder, toggle, share, validate
+  RulesetTemplatesController.cs       # /api/templates — public marketplace, share link, instantiate
+  RulesetRunsController.cs            # /api/runs — paginated run history (populated by Phase 3)
+  CustomVariablesController.cs        # /api/variables — CRUD for user-defined template variables
 Services/
-  ITokenService / TokenService        # JWT minting + refresh token crypto
-  IStravaAuthService / StravaAuthService  # Strava OAuth token exchange
-  IWebhookService / WebhookService    # Strava webhook event processing
-  WebhookBackgroundService            # hosted service draining the webhook channel
-DTOs/                                 # Records: StravaCallbackDto, AuthResponseDto,
-                                      #          StravaWebhookEventDto
+  ITokenService / TokenService                 # JWT minting + refresh token crypto
+  IStravaAuthService / StravaAuthService       # Strava OAuth token exchange
+  IWebhookService / WebhookService             # Strava webhook event processing
+  WebhookBackgroundService                     # hosted service draining the webhook channel
+  IRulesetValidator / RulesetValidator         # validates filter+effect, returns structured errors
+  IFilterSanitizer / FilterSanitizer           # nulls out PII/user-specific values for sharing
+  IRulesetService / RulesetService             # ruleset CRUD, priority management, sharing
+  IRulesetTemplateService / RulesetTemplateService  # template marketplace, instantiation
+  ICustomVariableService / CustomVariableService    # custom variable CRUD
+DTOs/
+  Rulesets/   CreateRulesetDto, UpdateRulesetDto, ReorderRulesetsDto,
+              RulesetResponseDto, ValidateRulesetDto
+  Templates/  CreateTemplateFromRulesetDto, RulesetTemplateResponseDto
+  Runs/       RulesetRunResponseDto
+  Variables/  CreateCustomVariableDto, UpdateCustomVariableDto, CustomVariableResponseDto
+  (root)      StravaCallbackDto, AuthResponseDto, StravaWebhookEventDto, UserDto
 Models/
-  AppUser.cs        # extends IdentityUser
-  RefreshToken.cs   # TokenHash (SHA-256), ExpiresAt, RevokedAt, IsActive
+  AppUser.cs          # extends IdentityUser, has nav props to Rulesets/Runs/Templates/Variables
+  RefreshToken.cs     # TokenHash (SHA-256), ExpiresAt, RevokedAt, IsActive
+  Ruleset.cs          # user-owned automation rule with priority ordering
+  RulesetTemplate.cs  # shareable/system-predefined rule definitions
+  RulesetRun.cs       # log entry per webhook-processed activity
+  CustomVariable.cs   # user-defined template variables with case logic
+  Rules/
+    FilterExpression.cs          # polymorphic tree: AndFilter, OrFilter, NotFilter, CheckFilter
+    RulesetEffect.cs             # nullable-field effect POCO
+    CustomVariableDefinition.cs  # cases + default_value
+    ValidationTypes.cs           # RulesetValidationResult, RulesetValidationError
 Validators/         # FluentValidation AbstractValidator<T> — one per DTO
 Middleware/
   GlobalExceptionHandler.cs
   DevBypassAuthenticationHandler.cs   # auto-authenticates every request in Development
 Data/
-  AppDbContext.cs   # extends IdentityDbContext<AppUser>
+  AppDbContext.cs   # extends IdentityDbContext<AppUser>, configures JSON columns + value comparers
+  DbSeeder.cs       # seeds 5 predefined system templates on first startup
 Migrations/         # EF Core migrations — do not edit by hand
 ```
 
@@ -56,6 +82,46 @@ Migrations/         # EF Core migrations — do not edit by hand
 - `Cors:AllowedOrigins` — comma-separated frontend origins. In `appsettings.json` for dev (`http://localhost:5173`); overridden by `Cors__AllowedOrigins` env var in Azure (set automatically by Bicep from the SWA hostname).
 
 **Azure auth**: Managed Identity (Entra ID) handles App Service → Azure SQL authentication only. It has nothing to do with user auth.
+
+---
+
+## Ruleset engine
+
+### Data model
+
+Rulesets have `Filter` (`FilterExpression?`) and `Effect` (`RulesetEffect?`) stored as JSON in `nvarchar(max)` columns via EF `HasConversion`. Both are nullable — null = draft/not-yet-configured.
+
+`IsValid` (bool, default false) is recomputed on every save by `IRulesetValidator`. Only valid rulesets are evaluated at runtime.
+
+`Priority` (int) is unique per user. Lower = evaluated first. Managed by the service layer — never set manually.
+
+### CheckFilter nullable fields
+
+`CheckFilter.Property`, `Operator`, and `Value` are all nullable to allow saving partially-built filters. A CheckFilter with any null field causes `IsValid = false`. The frontend should display incomplete checks as editable placeholders.
+
+### EF JSON columns
+
+`Filter`, `Effect`, `CustomVariable.Definition`, `RulesetTemplate.BundledVariables`, and `RulesetRun.FieldsChanged` are all stored as JSON. The shared `JsonOptions` uses `SnakeCaseLower` naming and `WhenWritingNull` ignore.
+
+Collection-type JSON columns (`FieldsChanged`, `BundledVariables`) have explicit `ValueComparer` configurations (serialise-and-compare) so EF Core detects mutations correctly.
+
+### FK cascade constraint
+
+`RulesetRun.RulesetId` FK is `NO ACTION` (not `SET NULL`) — SQL Server disallows `SET NULL` here because both `AppUser→Rulesets` and `AppUser→RulesetRuns` already cascade on user delete. `RulesetService.DeleteAsync` handles the nullification explicitly with `ExecuteUpdateAsync` before removing the ruleset.
+
+### Validation
+
+`IRulesetValidator.Validate(filter, effect)` returns `RulesetValidationResult(IsValid, List<RulesetValidationError>)`. Errors carry a JSON-path-style `Path` (e.g., `filter.conditions[2].value`), a machine-readable `Code`, and a human-readable `Message`.
+
+Called on every ruleset create/update (updates `IsValid`). Also exposed at `POST /api/rulesets/validate` for real-time frontend feedback.
+
+### Sharing sanitization
+
+`IFilterSanitizer.SanitizeForSharing(filter)` walks the tree and nulls `CheckFilter.Value` for `start_location`, `end_location`, and `gear_id` checks. Returns the sanitized filter plus a list of sanitized property names for the API response. Templates created from sanitized rulesets start with `IsValid = false`, prompting users to fill in their own values.
+
+### DbSeeder
+
+`DbSeeder.SeedAsync(db)` runs on startup and creates 5 predefined system templates (identified by `CreatedByUserId == null`). Skips entirely if any system template already exists.
 
 ---
 

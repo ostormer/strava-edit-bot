@@ -44,5 +44,5 @@ docs/                      # Architecture docs
 
 ## Known issues
 
-1. No pagination on activity/ruleset list endpoints
-2. Strava access/refresh tokens stored in plaintext — should be encrypted at rest (see Phase 5.2)
+1. Strava access/refresh tokens stored in plaintext — should be encrypted at rest (see Phase 5.2)
+2. `RulesetRun.RulesetId` FK is `NO ACTION` (not `SET NULL`) due to SQL Server cascade path restriction — `RulesetService.DeleteAsync` nullifies run references explicitly via `ExecuteUpdateAsync` before deleting a ruleset
