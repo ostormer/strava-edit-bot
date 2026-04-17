@@ -127,11 +127,14 @@ Deploy the API with the webhook endpoint accessible at `https://<your-api-host>/
 
 ### 2. Set configuration
 
-In Azure App Service → Configuration → Application settings:
+Add these secrets to the GitHub Environment for the target environment (Settings → Environments → `dev` → Secrets):
 
-```
-Strava__WebhookVerifyToken = <your-chosen-secret>
-```
+| Secret | Value |
+|---|---|
+| `STRAVA_CLIENT_SECRET` | Strava app client secret |
+| `STRAVA_WEBHOOK_VERIFY_TOKEN` | Shared secret you choose for webhook handshake |
+
+The deploy pipeline pushes them to App Service app settings on every deploy (as `Strava__ClientSecret` and `Strava__WebhookVerifyToken`).
 
 ### 3. Register the subscription
 

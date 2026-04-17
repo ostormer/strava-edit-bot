@@ -39,7 +39,17 @@ All resources use the prefix `${appName}-${env}` (e.g. `strava-edit-bot-dev`):
 
 **Managed identity**: the App Service authenticates to Azure SQL via a user-assigned managed identity — no passwords in connection strings. `AZURE_CLIENT_ID` on the App Service tells `DefaultAzureCredential` which identity to use.
 
-**App secrets**: `Jwt__Secret`, `Jwt__Issuer`, `Jwt__Audience` are not in Bicep. GitHub Actions pushes them to App Service app settings on every deploy from GitHub Environment secrets.
+**App secrets**: Secrets are **never** set manually in Azure Portal. They live in GitHub Environment secrets (Settings → Environments → `<env>` → Secrets) and get pushed to App Service app settings on every deploy via `az webapp config appsettings set` in the `deploy-app` job. Current secrets:
+
+| GitHub Secret | App Setting | Purpose |
+|---|---|---|
+| `JWT_SECRET` | `Jwt__Secret` | JWT signing key |
+| `JWT_ISSUER` | `Jwt__Issuer` | Token issuer |
+| `JWT_AUDIENCE` | `Jwt__Audience` | Token audience |
+| `STRAVA_CLIENT_SECRET` | `Strava__ClientSecret` | Strava API client secret |
+| `STRAVA_WEBHOOK_VERIFY_TOKEN` | `Strava__WebhookVerifyToken` | Webhook handshake verify token |
+
+To add a new secret: add it to GitHub Environment secrets, then add the `az webapp config appsettings set` line in `deploy.yml`.
 
 **SWA region**: Azure Static Web Apps do not support `norwayeast`. The `swaLocation` parameter defaults to `westeurope`. Content is served globally via CDN regardless of where the resource lives.
 
