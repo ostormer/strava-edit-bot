@@ -4,5 +4,6 @@ namespace StravaEditBotApi.DTOs.Variables;
 
 public record UpdateCustomVariableDto(
     string? Description,
-    CustomVariableDefinition? Definition
+    CustomVariableDefinition? Definition,
+    bool ClearDescription = false
 );

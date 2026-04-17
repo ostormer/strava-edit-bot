@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using StravaEditBotApi.Data;
 using StravaEditBotApi.DTOs.Rulesets;
@@ -87,11 +88,22 @@ public class RulesetService(
             ruleset.Description = dto.Description;
         }
 
-        // Allow explicitly setting filter/effect (including null to clear them)
-        if (dto.Filter is not null || dto.Effect is not null)
+        if (dto.ClearFilter)
         {
-            ruleset.Filter = dto.Filter ?? ruleset.Filter;
-            ruleset.Effect = dto.Effect ?? ruleset.Effect;
+            ruleset.Filter = null;
+        }
+        else if (dto.Filter is not null)
+        {
+            ruleset.Filter = dto.Filter;
+        }
+
+        if (dto.ClearEffect)
+        {
+            ruleset.Effect = null;
+        }
+        else if (dto.Effect is not null)
+        {
+            ruleset.Effect = dto.Effect;
         }
 
         if (dto.IsEnabled.HasValue)
@@ -122,6 +134,8 @@ public class RulesetService(
             return false;
         }
 
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
         // Null out RulesetRun.RulesetId before deletion.
         // The DB FK is NoAction (SQL Server can't have SET NULL here due to multiple cascade paths).
         await db.RulesetRuns
@@ -143,6 +157,7 @@ public class RulesetService(
         }
 
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return true;
     }
 
@@ -210,6 +225,25 @@ public class RulesetService(
             (sanitizedFilter, sanitizedProperties) = sanitizer.SanitizeForSharing(ruleset.Filter);
         }
 
+        // Bundle custom variable definitions referenced in the effect's template strings.
+        // Built-in variable references (e.g. {distance_km}) are implicitly excluded because
+        // they have no corresponding CustomVariable row — only user-defined variables are fetched.
+        List<CustomVariableDefinition>? bundledVariables = null;
+        HashSet<string> referencedNames = ExtractVariableNames(ruleset.Effect);
+
+        if (referencedNames.Count > 0)
+        {
+            List<string> nameList = [.. referencedNames];
+            List<CustomVariable> customVars = await db.CustomVariables
+                .Where(cv => cv.UserId == userId && nameList.Contains(cv.Name))
+                .ToListAsync(ct);
+
+            if (customVars.Count > 0)
+            {
+                bundledVariables = customVars.Select(cv => cv.Definition).ToList();
+            }
+        }
+
         string shareToken = GenerateShareToken();
         DateTime now = DateTime.UtcNow;
 
@@ -222,6 +256,7 @@ public class RulesetService(
             CreatedByUserId = userId,
             IsPublic = dto.IsPublic,
             ShareToken = shareToken,
+            BundledVariables = bundledVariables,
             CreatedAt = now
         };
 
@@ -229,6 +264,35 @@ public class RulesetService(
         await db.SaveChangesAsync(ct);
 
         return (ToTemplateDto(template, sanitizedProperties), sanitizedProperties);
+    }
+
+    private static readonly Regex _variablePattern = new(@"\{(\w+)\}", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Extracts all unique variable names referenced as {name} in the effect's
+    /// template string fields (name and description).
+    /// </summary>
+    private static HashSet<string> ExtractVariableNames(RulesetEffect? effect)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+
+        if (effect?.Name is not null)
+        {
+            foreach (Match match in _variablePattern.Matches(effect.Name))
+            {
+                names.Add(match.Groups[1].Value);
+            }
+        }
+
+        if (effect?.Description is not null)
+        {
+            foreach (Match match in _variablePattern.Matches(effect.Description))
+            {
+                names.Add(match.Groups[1].Value);
+            }
+        }
+
+        return names;
     }
 
     private static string GenerateShareToken()

@@ -480,11 +480,12 @@ public class RulesetsControllerTests
     }
 
     [Test]
-    public async Task ShareRulesetAsync_Found_ReturnsOkWithTemplate()
+    public async Task ShareRulesetAsync_Found_ReturnsOkWithTemplateAndSanitizedProperties()
     {
         SetUserClaims("user-1");
         var template = MakeTemplateResponse(id: 10);
-        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? shareResult = (template, []);
+        var sanitizedProperties = new List<string> { "start_location" };
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? shareResult = (template, sanitizedProperties);
         _rulesetService.ShareAsync("user-1", 1, Arg.Any<CreateTemplateFromRulesetDto>(), Arg.Any<CancellationToken>())
             .Returns(shareResult);
 
@@ -492,7 +493,9 @@ public class RulesetsControllerTests
 
         Assert.That(result, Is.InstanceOf<OkObjectResult>());
         var ok = (OkObjectResult)result;
-        Assert.That(ok.Value, Is.EqualTo(template));
+        var response = (ShareRulesetResponseDto)ok.Value!;
+        Assert.That(response.Template, Is.EqualTo(template));
+        Assert.That(response.SanitizedProperties, Is.EqualTo(sanitizedProperties));
     }
 
     // ========================================================

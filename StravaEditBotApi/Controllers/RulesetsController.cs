@@ -147,7 +147,7 @@ public class RulesetsController(
             return NotFound();
         }
 
-        return Ok(result.Value.Template);
+        return Ok(new ShareRulesetResponseDto(result.Value.Template, result.Value.SanitizedProperties));
     }
 
     [HttpPost("validate")]

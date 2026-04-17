@@ -125,14 +125,18 @@ public class RulesetServiceTests
         string? description = null,
         FilterExpression? filter = null,
         RulesetEffect? effect = null,
-        bool? isEnabled = null)
+        bool? isEnabled = null,
+        bool clearFilter = false,
+        bool clearEffect = false)
     {
         return new UpdateRulesetDto(
             Name: name,
             Description: description,
             Filter: filter,
             Effect: effect,
-            IsEnabled: isEnabled
+            IsEnabled: isEnabled,
+            ClearFilter: clearFilter,
+            ClearEffect: clearEffect
         );
     }
 
@@ -347,6 +351,64 @@ public class RulesetServiceTests
         Assert.That(fromDb!.Filter, Is.Not.Null);
         Assert.That(fromDb.Effect, Is.Not.Null);
         Assert.That(fromDb.Effect!.Name, Is.EqualTo("Morning Run"));
+    }
+
+    [Test]
+    public async Task UpdateAsync_ClearFilterTrue_SetsFilterToNull()
+    {
+        CheckFilter originalFilter = MakeCheckFilter();
+        RulesetResponseDto created = await SeedRulesetAsync(filter: originalFilter);
+
+        RulesetResponseDto? result = await _sut.UpdateAsync("user1", created.Id, MakeUpdateDto(clearFilter: true));
+
+        Assert.That(result, Is.Not.Null);
+
+        Ruleset? fromDb = await _db.Rulesets.FindAsync(created.Id);
+        Assert.That(fromDb!.Filter, Is.Null);
+    }
+
+    [Test]
+    public async Task UpdateAsync_ClearEffectTrue_SetsEffectToNull()
+    {
+        RulesetEffect originalEffect = new RulesetEffect { Name = "Morning Run" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: originalEffect);
+
+        RulesetResponseDto? result = await _sut.UpdateAsync("user1", created.Id, MakeUpdateDto(clearEffect: true));
+
+        Assert.That(result, Is.Not.Null);
+
+        Ruleset? fromDb = await _db.Rulesets.FindAsync(created.Id);
+        Assert.That(fromDb!.Effect, Is.Null);
+    }
+
+    [Test]
+    public async Task UpdateAsync_ClearFilterTrueWithFilterProvided_ClearWins()
+    {
+        CheckFilter originalFilter = MakeCheckFilter();
+        RulesetResponseDto created = await SeedRulesetAsync(filter: originalFilter);
+
+        CheckFilter newFilter = MakeCheckFilter(property: "name", op: "contains", value: "Run");
+        RulesetResponseDto? result = await _sut.UpdateAsync("user1", created.Id,
+            MakeUpdateDto(filter: newFilter, clearFilter: true));
+
+        Ruleset? fromDb = await _db.Rulesets.FindAsync(created.Id);
+        Assert.That(fromDb!.Filter, Is.Null);
+    }
+
+    [Test]
+    public async Task UpdateAsync_FilterProvidedWithoutClear_UpdatesFilter()
+    {
+        CheckFilter originalFilter = MakeCheckFilter();
+        RulesetResponseDto created = await SeedRulesetAsync(filter: originalFilter);
+
+        CheckFilter newFilter = MakeCheckFilter(property: "name", op: "contains", value: "Run");
+        RulesetResponseDto? result = await _sut.UpdateAsync("user1", created.Id,
+            MakeUpdateDto(filter: newFilter));
+
+        Ruleset? fromDb = await _db.Rulesets.FindAsync(created.Id);
+        Assert.That(fromDb!.Filter, Is.Not.Null);
+        var check = (CheckFilter)fromDb.Filter!;
+        Assert.That(check.Property, Is.EqualTo("name"));
     }
 
     [Test]
@@ -574,5 +636,211 @@ public class RulesetServiceTests
         Assert.That(result, Is.Not.Null);
         Assert.That(result!.Value.SanitizedProperties, Is.EquivalentTo(sanitizedProperties));
         Assert.That(result.Value.Template.SanitizedProperties, Is.EquivalentTo(sanitizedProperties));
+    }
+
+    // ========================================================
+    // ShareAsync — BundledVariables
+    // ========================================================
+
+    private CustomVariable SeedCustomVariable(
+        string userId = "user1",
+        string name = "pace_label",
+        string defaultValue = "Slow")
+    {
+        var definition = new CustomVariableDefinition
+        {
+            Name = name,
+            Cases = [],
+            DefaultValue = defaultValue
+        };
+        var variable = new CustomVariable
+        {
+            UserId = userId,
+            Name = name,
+            Definition = definition,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _db.CustomVariables.Add(variable);
+        _db.SaveChanges();
+        return variable;
+    }
+
+    [Test]
+    public async Task ShareAsync_EffectWithNoVariableReferences_SetsBundledVariablesToNull()
+    {
+        var effect = new RulesetEffect { Name = "Morning ride" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Is.Null);
+
+        RulesetTemplate? fromDb = await _db.RulesetTemplates.FirstAsync();
+        Assert.That(fromDb.BundledVariables, Is.Null);
+    }
+
+    [Test]
+    public async Task ShareAsync_NullEffect_SetsBundledVariablesToNull()
+    {
+        RulesetResponseDto created = await SeedRulesetAsync(effect: null);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Is.Null);
+    }
+
+    [Test]
+    public async Task ShareAsync_EffectReferencesOnlyBuiltInVariables_SetsBundledVariablesToNull()
+    {
+        // Built-ins like {distance_km} have no CustomVariable row — they should not be bundled
+        var effect = new RulesetEffect { Name = "{distance_km}km in {elapsed_time_human}" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Is.Null);
+    }
+
+    [Test]
+    public async Task ShareAsync_EffectReferencesOneCustomVariable_BundlesThatVariablesDefinition()
+    {
+        CustomVariable paceLabel = SeedCustomVariable(name: "pace_label", defaultValue: "Slow");
+        var effect = new RulesetEffect { Name = "Run — {pace_label}" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Has.Count.EqualTo(1));
+        Assert.That(result.Value.Template.BundledVariables![0].Name, Is.EqualTo("pace_label"));
+        Assert.That(result.Value.Template.BundledVariables[0].DefaultValue, Is.EqualTo("Slow"));
+    }
+
+    [Test]
+    public async Task ShareAsync_EffectReferencesOneCustomVariable_PersistsBundledVariablesToDatabase()
+    {
+        SeedCustomVariable(name: "pace_label");
+        var effect = new RulesetEffect { Name = "{pace_label}" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        RulesetTemplate? fromDb = await _db.RulesetTemplates.FirstAsync();
+        Assert.That(fromDb.BundledVariables, Is.Not.Null);
+        Assert.That(fromDb.BundledVariables!, Has.Count.EqualTo(1));
+        Assert.That(fromDb.BundledVariables![0].Name, Is.EqualTo("pace_label"));
+    }
+
+    [Test]
+    public async Task ShareAsync_EffectReferencesMultipleCustomVariables_BundlesAll()
+    {
+        SeedCustomVariable(name: "pace_label");
+        SeedCustomVariable(name: "time_of_day", defaultValue: "Evening");
+        var effect = new RulesetEffect
+        {
+            Name = "{time_of_day} run — {pace_label}",
+            Description = "A {pace_label} {time_of_day} run"
+        };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Has.Count.EqualTo(2));
+
+        IEnumerable<string> bundledNames = result.Value.Template.BundledVariables!.Select(v => v.Name);
+        Assert.That(bundledNames, Is.EquivalentTo(new[] { "pace_label", "time_of_day" }));
+    }
+
+    [Test]
+    public async Task ShareAsync_EffectReferencesSameVariableMultipleTimes_BundlesItOnce()
+    {
+        SeedCustomVariable(name: "pace_label");
+        var effect = new RulesetEffect
+        {
+            Name = "{pace_label}",
+            Description = "Today's pace: {pace_label}"
+        };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task ShareAsync_EffectMixesBuiltInAndCustomVariables_BundlesOnlyCustom()
+    {
+        SeedCustomVariable(name: "pace_label");
+        var effect = new RulesetEffect { Name = "{distance_km}km — {pace_label}" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Has.Count.EqualTo(1));
+        Assert.That(result.Value.Template.BundledVariables![0].Name, Is.EqualTo("pace_label"));
+    }
+
+    [Test]
+    public async Task ShareAsync_ReferencedVariableBelongsToDifferentUser_DoesNotBundle()
+    {
+        _db.Users.Add(new AppUser { Id = "user2", UserName = "user2" });
+        await _db.SaveChangesAsync();
+        SeedCustomVariable(userId: "user2", name: "pace_label");
+
+        var effect = new RulesetEffect { Name = "{pace_label}" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Is.Null);
+    }
+
+    [Test]
+    public async Task ShareAsync_ReferencedVariableDoesNotExist_SetsBundledVariablesToNull()
+    {
+        // {unknown_var} referenced but user has no such custom variable
+        var effect = new RulesetEffect { Name = "{unknown_var}" };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Is.Null);
+    }
+
+    [Test]
+    public async Task ShareAsync_CustomVariableInDescriptionOnly_BundlesIt()
+    {
+        SeedCustomVariable(name: "time_of_day");
+        var effect = new RulesetEffect
+        {
+            Name = "Morning ride",
+            Description = "Went out in the {time_of_day}"
+        };
+        RulesetResponseDto created = await SeedRulesetAsync(effect: effect);
+
+        (RulesetTemplateResponseDto Template, List<string> SanitizedProperties)? result =
+            await _sut.ShareAsync("user1", created.Id, MakeShareDto());
+
+        Assert.That(result, Is.Not.Null);
+        Assert.That(result!.Value.Template.BundledVariables, Has.Count.EqualTo(1));
+        Assert.That(result.Value.Template.BundledVariables![0].Name, Is.EqualTo("time_of_day"));
     }
 }

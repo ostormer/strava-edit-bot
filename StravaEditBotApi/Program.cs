@@ -11,7 +11,6 @@ using StravaEditBotApi.DTOs;
 using StravaEditBotApi.Middleware;
 using StravaEditBotApi.Models;
 using StravaEditBotApi.Services;
-using StravaEditBotApi.DTOs.Rulesets;
 
 var builder = WebApplication.CreateBuilder(args);
 

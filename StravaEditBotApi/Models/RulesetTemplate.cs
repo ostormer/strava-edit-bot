@@ -5,6 +5,13 @@ namespace StravaEditBotApi.Models;
 public class RulesetTemplate
 {
     public int Id { get; set; }
+
+    /// <summary>
+    /// Stable identifier for system-seeded templates. Null for user-created templates.
+    /// Used by DbSeeder to upsert: insert new, update changed, delete removed templates.
+    /// </summary>
+    public string? SeedKey { get; set; }
+
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
 

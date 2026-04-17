@@ -252,6 +252,30 @@ public class CustomVariableServiceTests
     }
 
     [Test]
+    public async Task UpdateAsync_ClearDescriptionTrue_SetsDescriptionToNull()
+    {
+        var (created, _) = await _sut.CreateAsync("user1", MakeCreateDto("pace_label", description: "Remove me"));
+
+        var (result, _) = await _sut.UpdateAsync("user1", created!.Id, new UpdateCustomVariableDto(null, null, ClearDescription: true));
+
+        Assert.That(result!.Description, Is.Null);
+
+        var fromDb = await _db.CustomVariables.FindAsync(created.Id);
+        Assert.That(fromDb!.Description, Is.Null);
+    }
+
+    [Test]
+    public async Task UpdateAsync_ClearDescriptionTrueWithDescriptionProvided_ClearWins()
+    {
+        var (created, _) = await _sut.CreateAsync("user1", MakeCreateDto("pace_label", description: "Old"));
+
+        var (result, _) = await _sut.UpdateAsync("user1", created!.Id, new UpdateCustomVariableDto("New desc", null, ClearDescription: true));
+
+        var fromDb = await _db.CustomVariables.FindAsync(created.Id);
+        Assert.That(fromDb!.Description, Is.Null);
+    }
+
+    [Test]
     public async Task UpdateAsync_DefinitionIsNull_DoesNotChangeDefinition()
     {
         var originalDefinition = new CustomVariableDefinition

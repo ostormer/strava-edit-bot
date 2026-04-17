@@ -99,7 +99,11 @@ public class CustomVariableService(AppDbContext db) : ICustomVariableService
             return (null, null);
         }
 
-        if (dto.Description is not null)
+        if (dto.ClearDescription)
+        {
+            variable.Description = null;
+        }
+        else if (dto.Description is not null)
         {
             variable.Description = dto.Description;
         }

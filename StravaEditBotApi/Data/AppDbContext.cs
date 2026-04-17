@@ -82,6 +82,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
                 .IsUnique()
                 .HasFilter("[ShareToken] IS NOT NULL");
 
+            entity.HasIndex(t => t.SeedKey)
+                .IsUnique()
+                .HasFilter("[SeedKey] IS NOT NULL");
+
+            entity.Property(t => t.SeedKey).HasMaxLength(100);
             entity.Property(t => t.Name).HasMaxLength(200).IsRequired();
             entity.Property(t => t.Description).HasMaxLength(2000);
 

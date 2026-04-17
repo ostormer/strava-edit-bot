@@ -6,27 +6,60 @@ using StravaEditBotApi.Models.Rules;
 namespace StravaEditBotApi.Data;
 
 /// <summary>
-/// Seeds predefined system templates on startup if they don't already exist.
-/// Identified by name — if a template with the same name exists, it is skipped.
+/// Seeds and upserts predefined system templates on startup.
+/// Each template is identified by a stable <see cref="RulesetTemplate.SeedKey"/>.
+/// New keys are inserted, existing keys are updated, keys removed from the list are deleted.
 /// </summary>
 public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext db)
     {
-        bool anyExist = await db.RulesetTemplates
-            .AnyAsync(t => t.CreatedByUserId == null);
-
-        if (anyExist)
-        {
-            return;
-        }
-
         DateTime now = DateTime.UtcNow;
 
-        List<RulesetTemplate> templates =
+        List<RulesetTemplate> desired = BuildSystemTemplates(now);
+        HashSet<string> desiredKeys = desired.Select(t => t.SeedKey!).ToHashSet();
+
+        List<RulesetTemplate> existing = await db.RulesetTemplates
+            .Where(t => t.SeedKey != null)
+            .ToListAsync();
+
+        Dictionary<string, RulesetTemplate> existingByKey = existing
+            .ToDictionary(t => t.SeedKey!);
+
+        // Insert new, update existing
+        foreach (RulesetTemplate template in desired)
+        {
+            if (existingByKey.TryGetValue(template.SeedKey!, out RulesetTemplate? current))
+            {
+                current.Name = template.Name;
+                current.Description = template.Description;
+                current.Filter = template.Filter;
+                current.Effect = template.Effect;
+                current.IsPublic = template.IsPublic;
+                current.BundledVariables = template.BundledVariables;
+            }
+            else
+            {
+                db.RulesetTemplates.Add(template);
+            }
+        }
+
+        // Delete removed
+        foreach (RulesetTemplate stale in existing.Where(t => !desiredKeys.Contains(t.SeedKey!)))
+        {
+            db.RulesetTemplates.Remove(stale);
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private static List<RulesetTemplate> BuildSystemTemplates(DateTime now)
+    {
+        return
         [
             new RulesetTemplate
             {
+                SeedKey = "morning-commute-ride",
                 Name = "Morning Commute Ride",
                 Description = "Automatically marks bike rides before 9 AM on weekdays as commutes.",
                 Filter = new AndFilter(
@@ -41,6 +74,7 @@ public static class DbSeeder
             },
             new RulesetTemplate
             {
+                SeedKey = "evening-run-namer",
                 Name = "Evening Run Namer",
                 Description = "Renames evening runs with sport type and distance.",
                 Filter = new AndFilter(
@@ -54,6 +88,7 @@ public static class DbSeeder
             },
             new RulesetTemplate
             {
+                SeedKey = "weekend-long-run",
                 Name = "Weekend Long Run",
                 Description = "Labels long weekend runs with distance and elevation.",
                 Filter = new AndFilter(
@@ -68,6 +103,7 @@ public static class DbSeeder
             },
             new RulesetTemplate
             {
+                SeedKey = "trainer-ride-labeler",
                 Name = "Trainer Ride Labeler",
                 Description = "Labels indoor trainer rides and hides them from the home feed.",
                 Filter = new AndFilter(
@@ -81,6 +117,7 @@ public static class DbSeeder
             },
             new RulesetTemplate
             {
+                SeedKey = "lunchtime-walk",
                 Name = "Lunchtime Walk",
                 Description = "Labels walks between 11 AM and 2 PM as lunch walks.",
                 Filter = new AndFilter(
@@ -94,8 +131,5 @@ public static class DbSeeder
                 CreatedAt = now
             }
         ];
-
-        await db.RulesetTemplates.AddRangeAsync(templates);
-        await db.SaveChangesAsync();
     }
 }

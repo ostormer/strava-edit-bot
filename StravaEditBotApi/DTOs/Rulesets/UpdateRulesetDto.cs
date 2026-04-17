@@ -7,5 +7,7 @@ public record UpdateRulesetDto(
     string? Description,
     FilterExpression? Filter,
     RulesetEffect? Effect,
-    bool? IsEnabled
+    bool? IsEnabled,
+    bool ClearFilter = false,
+    bool ClearEffect = false
 );
