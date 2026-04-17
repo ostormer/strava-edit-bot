@@ -231,9 +231,11 @@ jobs:
   # deploy so rotating a secret takes effect without touching infrastructure.
   #
   # Required GitHub environment secrets (Settings → Environments → dev → Secrets):
-  #   JWT_SECRET   — signing key (keep long and random, e.g. openssl rand -base64 64)
-  #   JWT_ISSUER   — token issuer, e.g. https://strava-edit-bot-dev.azurewebsites.net
-  #   JWT_AUDIENCE — token audience, e.g. https://strava-edit-bot-dev.azurewebsites.net
+  #   JWT_SECRET              — signing key (keep long and random, e.g. openssl rand -base64 64)
+  #   JWT_ISSUER              — token issuer, e.g. https://strava-edit-bot-dev.azurewebsites.net
+  #   JWT_AUDIENCE            — token audience, e.g. https://strava-edit-bot-dev.azurewebsites.net
+  #   STRAVA_CLIENT_SECRET    — Strava API app client secret
+  #   STRAVA_WEBHOOK_VERIFY_TOKEN — shared secret for webhook subscription handshake
   deploy-app:
     name: Deploy API (${{ inputs.environment || 'dev' }})
     needs: [build, deploy-infra]
@@ -273,7 +275,9 @@ jobs:
             --settings \
               "Jwt__Secret=${{ secrets.JWT_SECRET }}" \
               "Jwt__Issuer=${{ secrets.JWT_ISSUER }}" \
-              "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}"
+              "Jwt__Audience=${{ secrets.JWT_AUDIENCE }}" \
+              "Strava__ClientSecret=${{ secrets.STRAVA_CLIENT_SECRET }}" \
+              "Strava__WebhookVerifyToken=${{ secrets.STRAVA_WEBHOOK_VERIFY_TOKEN }}"
 
   # ── Deploy frontend ───────────────────────────────────────────────────────────
   # Uses the SWA deployment token (not OIDC) — Static Web Apps has its own auth
