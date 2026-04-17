@@ -28,13 +28,21 @@ strava-edit-bot-ui/        # React frontend              → strava-edit-bot-ui/
 infrastructure/            # Bicep IaC                   → infrastructure/CLAUDE.md
 bruno/                     # Bruno API collection for manual testing
 docs/                      # Architecture docs
-  auth.md                  # Auth design, token model, swimlane diagrams → docs/auth.md
 ```
+
+### Docs
+
+| File | Contents |
+|---|---|
+| [docs/auth.md](docs/auth.md) | Auth design: token model, OAuth flow, JWT + refresh token lifecycle, swimlane diagrams |
+| [docs/webhook.md](docs/webhook.md) | Webhook pipeline: Strava subscription setup, event flow, background channel architecture |
+| [docs/data-model.md](docs/data-model.md) | DB entities for the ruleset engine: `Ruleset`, `RulesetTemplate`, `RulesetRun`, `CustomVariable`, EF config, seeding |
+| [docs/filter-effect-types.md](docs/filter-effect-types.md) | C# POCO types for JSON-serialized columns: `FilterExpression` (polymorphic tree), `RulesetEffect`, `CustomVariableDefinition` |
+| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased build plan for the ruleset engine (Phase 0–5): scope, task breakdown, dependency graph, API route summary |
 
 ---
 
 ## Known issues
 
-1. Controllers return the `Activity` entity directly — should use response DTOs
-2. No pagination on `GetAllAsync`
-3. Activities not yet scoped to `UserId` — all users see all activities
+1. No pagination on activity/ruleset list endpoints
+2. Strava access/refresh tokens stored in plaintext — should be encrypted at rest (see Phase 5.2)
