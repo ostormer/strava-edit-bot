@@ -34,8 +34,7 @@ public class RulesetService(
             return null;
         }
 
-        RulesetValidationResult validation = validator.Validate(ruleset.Filter, ruleset.Effect);
-        return ToDto(ruleset, validation.Errors);
+        return ToDto(ruleset, []);
     }
 
     public async Task<RulesetResponseDto> CreateAsync(string userId, CreateRulesetDto dto, CancellationToken ct = default)

@@ -232,22 +232,22 @@ public class RulesetServiceTests
     }
 
     [Test]
-    public async Task GetByIdAsync_InvalidRuleset_ReturnsRulesetWithValidationErrors()
+    public async Task GetByIdAsync_InvalidRuleset_ReturnsEmptyValidationErrors()
     {
-        RulesetResponseDto created = await SeedRulesetAsync();
-
-        var errors = new List<RulesetValidationError>
-        {
-            new("filter", "filter_required", "Filter is required")
-        };
+        // IsValid is stored on create/update — GetByIdAsync returns it from DB without re-validating.
+        // ValidationErrors are only returned by CreateAsync/UpdateAsync, not by GET endpoints.
         _validator.Validate(Arg.Any<FilterExpression?>(), Arg.Any<RulesetEffect?>())
-            .Returns(new RulesetValidationResult(false, errors));
+            .Returns(new RulesetValidationResult(false, [new("filter", "filter_required", "Filter is required")]));
+
+        RulesetResponseDto created = await SeedRulesetAsync();
 
         RulesetResponseDto? result = await _sut.GetByIdAsync("user1", created.Id);
 
         Assert.That(result, Is.Not.Null);
-        Assert.That(result!.ValidationErrors, Has.Count.EqualTo(1));
-        Assert.That(result.ValidationErrors[0].Code, Is.EqualTo("filter_required"));
+        Assert.That(result!.IsValid, Is.False);
+        Assert.That(result.ValidationErrors, Is.Empty);
+        // Validator called exactly once — by CreateAsync inside SeedRulesetAsync, not by GetByIdAsync
+        _validator.Received(1).Validate(Arg.Any<FilterExpression?>(), Arg.Any<RulesetEffect?>());
     }
 
     // ========================================================
