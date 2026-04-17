@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using StravaEditBotApi.Controllers;
-using StravaEditBotApi.DTOs;
+using StravaEditBotApi.DTOs.Auth;
+using StravaEditBotApi.DTOs.Webhook;
 using StravaEditBotApi.Models;
 
 namespace StravaEditBotApi.Tests.Unit.Controllers;

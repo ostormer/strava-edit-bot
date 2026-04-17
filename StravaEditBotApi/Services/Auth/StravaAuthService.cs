@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using StravaAPILibrary.Models.Athletes;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Auth;
 
 public class StravaAuthService(HttpClient httpClient, IConfiguration configuration) : IStravaAuthService
 {

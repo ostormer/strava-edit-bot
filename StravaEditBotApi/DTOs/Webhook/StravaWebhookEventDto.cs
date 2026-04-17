@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace StravaEditBotApi.DTOs;
+namespace StravaEditBotApi.DTOs.Webhook;
 
 public record StravaWebhookEventDto(
     [property: JsonPropertyName("object_type")] string ObjectType,

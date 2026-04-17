@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using StravaEditBotApi.Services;
+using StravaEditBotApi.Services.Auth;
+using StravaEditBotApi.Services.Rulesets;
+using StravaEditBotApi.Services.Webhook;
 
 namespace StravaEditBotApi.Tests.Integration;
 

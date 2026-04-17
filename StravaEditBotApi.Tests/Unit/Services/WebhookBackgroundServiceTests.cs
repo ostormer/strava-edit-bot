@@ -2,8 +2,11 @@ using System.Threading.Channels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-using StravaEditBotApi.DTOs;
-using StravaEditBotApi.Services;
+using StravaEditBotApi.DTOs.Auth;
+using StravaEditBotApi.DTOs.Webhook;
+using StravaEditBotApi.Services.Auth;
+using StravaEditBotApi.Services.Rulesets;
+using StravaEditBotApi.Services.Webhook;
 
 namespace StravaEditBotApi.Tests.Unit.Services;
 

@@ -7,10 +7,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StravaEditBotApi.Data;
-using StravaEditBotApi.DTOs;
+using StravaEditBotApi.DTOs.Auth;
+using StravaEditBotApi.DTOs.Webhook;
 using StravaEditBotApi.Middleware;
 using StravaEditBotApi.Models;
-using StravaEditBotApi.Services;
+using StravaEditBotApi.Services.Auth;
+using StravaEditBotApi.Services.Rulesets;
+using StravaEditBotApi.Services.Webhook;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,6 +95,13 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddHttpClient<IStravaAuthService, StravaAuthService>();
 
+// Ruleset engine
+builder.Services.AddScoped<IRulesetValidator, RulesetValidator>();
+builder.Services.AddScoped<IFilterSanitizer, FilterSanitizer>();
+builder.Services.AddScoped<IRulesetService, RulesetService>();
+builder.Services.AddScoped<IRulesetTemplateService, RulesetTemplateService>();
+builder.Services.AddScoped<ICustomVariableService, CustomVariableService>();
+
 // Webhook infrastructure
 var webhookChannel = Channel.CreateUnbounded<StravaWebhookEventDto>();
 builder.Services.AddSingleton(webhookChannel);
@@ -117,6 +127,8 @@ using (var scope = app.Services.CreateScope())
     {
         await db.Database.EnsureCreatedAsync();
     }
+
+    await DbSeeder.SeedAsync(db);
 }
 
 // Configure the HTTP request pipeline.

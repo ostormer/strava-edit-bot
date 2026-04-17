@@ -1,4 +1,4 @@
-namespace StravaEditBotApi.DTOs;
+namespace StravaEditBotApi.DTOs.Auth;
 
 public record AuthResponseDto(
     string AccessToken,

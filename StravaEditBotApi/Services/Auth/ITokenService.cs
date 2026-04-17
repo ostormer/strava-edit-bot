@@ -1,6 +1,6 @@
 using StravaEditBotApi.Models;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Auth;
 
 public interface ITokenService
 {

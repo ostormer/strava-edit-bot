@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using StravaEditBotApi.Data;
-using StravaEditBotApi.DTOs;
+using StravaEditBotApi.DTOs.Auth;
+using StravaEditBotApi.DTOs.Webhook;
 using StravaEditBotApi.Models;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Webhook;
 
 public class WebhookService(
     AppDbContext db,

@@ -244,6 +244,45 @@ namespace StravaEditBotApi.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("StravaEditBotApi.Models.CustomVariable", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Definition")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("CustomVariables");
+                });
+
             modelBuilder.Entity("StravaEditBotApi.Models.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -272,6 +311,177 @@ namespace StravaEditBotApi.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.Ruleset", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedFromTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Effect")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Filter")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsValid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedFromTemplateId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "Priority")
+                        .IsUnique();
+
+                    b.ToTable("Rulesets");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.RulesetRun", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FieldsChanged")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RulesetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RulesetName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<long>("StravaActivityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("StravaEventTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RulesetId");
+
+                    b.HasIndex("StravaActivityId");
+
+                    b.HasIndex("UserId", "ProcessedAt");
+
+                    b.ToTable("RulesetRuns");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.RulesetTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BundledVariables")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Effect")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Filter")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SeedKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ShareToken")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("UsageCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("SeedKey")
+                        .IsUnique()
+                        .HasFilter("[SeedKey] IS NOT NULL");
+
+                    b.HasIndex("ShareToken")
+                        .IsUnique()
+                        .HasFilter("[ShareToken] IS NOT NULL");
+
+                    b.ToTable("RulesetTemplates");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -325,6 +535,17 @@ namespace StravaEditBotApi.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("StravaEditBotApi.Models.CustomVariable", b =>
+                {
+                    b.HasOne("StravaEditBotApi.Models.AppUser", "User")
+                        .WithMany("CustomVariables")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StravaEditBotApi.Models.RefreshToken", b =>
                 {
                     b.HasOne("StravaEditBotApi.Models.AppUser", "User")
@@ -334,6 +555,73 @@ namespace StravaEditBotApi.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.Ruleset", b =>
+                {
+                    b.HasOne("StravaEditBotApi.Models.RulesetTemplate", "CreatedFromTemplate")
+                        .WithMany("Rulesets")
+                        .HasForeignKey("CreatedFromTemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("StravaEditBotApi.Models.AppUser", "User")
+                        .WithMany("Rulesets")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedFromTemplate");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.RulesetRun", b =>
+                {
+                    b.HasOne("StravaEditBotApi.Models.Ruleset", "Ruleset")
+                        .WithMany("Runs")
+                        .HasForeignKey("RulesetId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("StravaEditBotApi.Models.AppUser", "User")
+                        .WithMany("RulesetRuns")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ruleset");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.RulesetTemplate", b =>
+                {
+                    b.HasOne("StravaEditBotApi.Models.AppUser", "CreatedByUser")
+                        .WithMany("RulesetTemplates")
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.AppUser", b =>
+                {
+                    b.Navigation("CustomVariables");
+
+                    b.Navigation("RulesetRuns");
+
+                    b.Navigation("RulesetTemplates");
+
+                    b.Navigation("Rulesets");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.Ruleset", b =>
+                {
+                    b.Navigation("Runs");
+                });
+
+            modelBuilder.Entity("StravaEditBotApi.Models.RulesetTemplate", b =>
+                {
+                    b.Navigation("Rulesets");
                 });
 #pragma warning restore 612, 618
         }

@@ -42,13 +42,17 @@ Build the database layer and REST API for managing rulesets.
 ### 1.1 — Entities & DB
 
 - Create `Ruleset` entity (see [data-model.md](data-model.md))
+  - `Filter` and `Effect` are nullable — supports saving incomplete/draft rulesets
+  - `IsValid` bool column — recomputed on every save by the validator
 - Create `RulesetTemplate` entity
 - Create `RulesetRun` entity
 - Create `CustomVariable` entity
 - Create C# POCOs for JSON serialization (see [filter-effect-types.md](../docs/filter-effect-types.md)):
   - `FilterExpression` (polymorphic: `AndFilter`, `OrFilter`, `NotFilter`, `CheckFilter`)
+  - `CheckFilter` fields are nullable (Property, Operator, Value) — allows saving partially-built filters
   - `RulesetEffect` (nullable fields for each editable property)
   - `CustomVariableDefinition` / `VariableCase` (ordered case list with filter conditions)
+  - `RulesetValidationResult` / `RulesetValidationError` — validation return types (not persisted)
 - Update `AppDbContext`: add `DbSet<Ruleset>`, `DbSet<RulesetTemplate>`, `DbSet<RulesetRun>`, `DbSet<CustomVariable>`
 - Configure EF: JSON column conversions, indexes, relationships, cascade delete rules
 - Create & apply migration
@@ -63,9 +67,11 @@ Build the database layer and REST API for managing rulesets.
 - `RulesetRunResponseDto` — Run log entry
 - `RulesetTemplateResponseDto` — Template for marketplace/sharing
 - `CreateTemplateFromRulesetDto` — Name, Description, IsPublic
+- `ValidateRulesetDto` — Filter (JSON, nullable), Effect (JSON, nullable) — body-only validation without saving
 - `CreateCustomVariableDto` — Name, Description, Definition (JSON)
 - `UpdateCustomVariableDto` — Description, Definition (JSON)
 - `CustomVariableResponseDto` — Full variable for API responses
+- Note: `RulesetResponseDto` includes `IsValid` bool and `ValidationErrors` list so frontend can show inline feedback
 - FluentValidation validators:
   - Validate filter JSON structure (valid operators, known properties)
   - Validate effect JSON (only known fields, valid sport_type values)
@@ -88,6 +94,18 @@ Build the database layer and REST API for managing rulesets.
   - `CreateFromRulesetAsync(userId, rulesetId, dto)` — snapshot
   - `InstantiateAsync(userId, templateId)` — create ruleset from template
   - `IncrementUsageCountAsync(templateId)` — called on instantiation
+- `IRulesetValidator` / `RulesetValidator`:
+  - `RulesetValidationResult Validate(FilterExpression? filter, RulesetEffect? effect, List<CustomVariable>? userVariables)`
+  - Checks filter completeness, property/operator validity, value shapes, effect non-empty, template string syntax, regex compilation, nesting depth
+  - Returns structured errors with JSON-path-style pointers (e.g., `filter.conditions[2].value`)
+  - Called on every ruleset create/update to compute `IsValid`
+  - See [data-model.md — Validation](../docs/data-model.md#validation) for full check table
+- `IFilterSanitizer` / `FilterSanitizer`:
+  - `(FilterExpression, List<string>) SanitizeForSharing(FilterExpression filter)`
+  - Walks filter tree, nulls out `value` on `start_location`, `end_location`, `gear_id` checks
+  - Returns sanitized filter + list of sanitized property names (for user feedback)
+  - Called by template creation endpoint
+  - See [data-model.md — Sharing Sanitization](../docs/data-model.md#sharing-sanitization)
 - `ICustomVariableService` / `CustomVariableService`:
   - `GetUserVariablesAsync(userId)` — list all
   - `GetByIdAsync(userId, variableId)` — with ownership check
@@ -105,7 +123,8 @@ Build the database layer and REST API for managing rulesets.
   - `DELETE /{id}` — delete
   - `PUT /reorder` — reorder priorities
   - `PATCH /{id}/toggle` — enable/disable
-  - `POST /{id}/share` — create template from ruleset
+  - `POST /{id}/share` — create template from ruleset (sanitizes PII from filter)
+  - `POST /validate` — validate filter + effect without saving (real-time frontend feedback)
 - `RulesetTemplatesController` (`/api/templates`):
   - `GET /` — list public templates (marketplace)
   - `GET /shared/{shareToken}` — get template by share link
@@ -332,6 +351,7 @@ Phase 2 can start after Phase 1.1 (entities) — it only needs the POCO types, n
 | `PUT` | `/api/rulesets/reorder` | Reorder priorities | 1 |
 | `PATCH` | `/api/rulesets/{id}/toggle` | Toggle enabled | 1 |
 | `POST` | `/api/rulesets/{id}/share` | Create template from ruleset | 1 |
+| `POST` | `/api/rulesets/validate` | Validate filter + effect without saving | 1 |
 | `GET` | `/api/templates` | List public templates | 1 |
 | `GET` | `/api/templates/shared/{token}` | Get template by share link | 1 |
 | `POST` | `/api/templates/{id}/use` | Create ruleset from template | 1 |
