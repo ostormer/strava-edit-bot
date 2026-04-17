@@ -1,7 +1,7 @@
 using StravaEditBotApi.Models;
 using StravaEditBotApi.Models.Rules;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Rulesets;
 
 public interface IRulesetValidator
 {

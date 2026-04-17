@@ -1,7 +1,8 @@
 using System.Threading.Channels;
-using StravaEditBotApi.DTOs;
+using StravaEditBotApi.DTOs.Auth;
+using StravaEditBotApi.DTOs.Webhook;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Webhook;
 
 public class WebhookBackgroundService(
     ChannelReader<StravaWebhookEventDto> channelReader,

@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StravaEditBotApi.Data;
-using StravaEditBotApi.DTOs;
+using StravaEditBotApi.DTOs.Auth;
+using StravaEditBotApi.DTOs.Webhook;
 using StravaEditBotApi.Models;
-using StravaEditBotApi.Services;
+using StravaEditBotApi.Services.Auth;
+using StravaEditBotApi.Services.Rulesets;
+using StravaEditBotApi.Services.Webhook;
 
 namespace StravaEditBotApi.Controllers;
 

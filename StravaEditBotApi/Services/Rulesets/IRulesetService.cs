@@ -1,7 +1,7 @@
 using StravaEditBotApi.DTOs.Rulesets;
 using StravaEditBotApi.DTOs.Templates;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Rulesets;
 
 public interface IRulesetService
 {

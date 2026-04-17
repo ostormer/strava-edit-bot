@@ -1,6 +1,6 @@
 # StravaEditBot — Agent Guide
 
-A bot that lets users bulk-edit their Strava activity names, descriptions, and metadata through a web interface. Learning project — the developer has a strong Python web dev background; Python analogies are helpful when explaining .NET concepts.
+Bot for bulk-editing Strava activity names, descriptions, metadata via web UI. Learning project — dev has strong Python web background; use Python analogies for .NET concepts.
 
 ---
 
@@ -36,13 +36,13 @@ docs/                      # Architecture docs
 |---|---|
 | [docs/auth.md](docs/auth.md) | Auth design: token model, OAuth flow, JWT + refresh token lifecycle, swimlane diagrams |
 | [docs/webhook.md](docs/webhook.md) | Webhook pipeline: Strava subscription setup, event flow, background channel architecture |
-| [docs/data-model.md](docs/data-model.md) | DB entities for the ruleset engine: `Ruleset`, `RulesetTemplate`, `RulesetRun`, `CustomVariable`, EF config, seeding |
+| [docs/data-model.md](docs/data-model.md) | DB entities for ruleset engine: `Ruleset`, `RulesetTemplate`, `RulesetRun`, `CustomVariable`, EF config, seeding |
 | [docs/filter-effect-types.md](docs/filter-effect-types.md) | C# POCO types for JSON-serialized columns: `FilterExpression` (polymorphic tree), `RulesetEffect`, `CustomVariableDefinition` |
-| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased build plan for the ruleset engine (Phase 0–5): scope, task breakdown, dependency graph, API route summary |
+| [docs/implementation-plan.md](docs/implementation-plan.md) | Phased build plan for ruleset engine (Phase 0–5): scope, task breakdown, dependency graph, API route summary |
 
 ---
 
 ## Known issues
 
-1. Strava access/refresh tokens stored in plaintext — should be encrypted at rest (see Phase 5.2)
-2. `RulesetRun.RulesetId` FK is `NO ACTION` (not `SET NULL`) due to SQL Server cascade path restriction — `RulesetService.DeleteAsync` nullifies run references explicitly via `ExecuteUpdateAsync` before deleting a ruleset
+1. Strava access/refresh tokens stored plaintext — needs encryption at rest (see Phase 5.2)
+2. `RulesetRun.RulesetId` FK is `NO ACTION` (not `SET NULL`) — SQL Server cascade path restriction — `RulesetService.DeleteAsync` nullifies run refs explicitly via `ExecuteUpdateAsync` before deleting ruleset

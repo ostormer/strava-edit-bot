@@ -1,4 +1,4 @@
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Auth;
 
 public record StravaTokenData(
     long AthleteId,

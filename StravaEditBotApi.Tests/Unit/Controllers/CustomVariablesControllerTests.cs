@@ -5,7 +5,9 @@ using NSubstitute;
 using StravaEditBotApi.Controllers;
 using StravaEditBotApi.DTOs.Variables;
 using StravaEditBotApi.Models.Rules;
-using StravaEditBotApi.Services;
+using StravaEditBotApi.Services.Auth;
+using StravaEditBotApi.Services.Rulesets;
+using StravaEditBotApi.Services.Webhook;
 
 namespace StravaEditBotApi.Tests.Unit.Controllers;
 

@@ -1,6 +1,6 @@
 using StravaEditBotApi.DTOs.Variables;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Rulesets;
 
 public interface ICustomVariableService
 {

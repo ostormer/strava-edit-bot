@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using StravaEditBotApi.Models.Rules;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Rulesets;
 
 public class RulesetValidator : IRulesetValidator
 {

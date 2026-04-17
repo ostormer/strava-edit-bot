@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using StravaEditBotApi.Models;
 
-namespace StravaEditBotApi.Services;
+namespace StravaEditBotApi.Services.Auth;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
