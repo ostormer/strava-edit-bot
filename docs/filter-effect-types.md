@@ -50,17 +50,19 @@ public record NotFilter(
 
 /// <summary>
 /// Leaf node: checks a single activity property against a value.
+/// All fields are nullable to support saving incomplete/draft rulesets.
+/// A fully filled CheckFilter is required for the ruleset to be valid.
 /// The Value is a JsonElement because its shape varies by property/operator.
 /// </summary>
 public record CheckFilter(
     [property: JsonPropertyName("property")]
-    string Property,
+    string? Property,
 
     [property: JsonPropertyName("operator")]
-    string Operator,
+    string? Operator,
 
     [property: JsonPropertyName("value")]
-    JsonElement Value
+    JsonElement? Value
 ) : FilterExpression;
 ```
 
@@ -174,11 +176,14 @@ var filter = JsonSerializer.Deserialize<FilterExpression>(jsonString, options);
 ### Validation rules (FluentValidation or manual)
 
 - Max nesting depth: 10 levels
+- `CheckFilter.Property`, `Operator`, and `Value` are nullable (allows saving drafts) — but all three must be non-null for `IsValid = true`
 - `CheckFilter.Property` must be a known property name
 - `CheckFilter.Operator` must be valid for the given property
 - `CheckFilter.Value` shape must match the property/operator pair
 - `AndFilter`/`OrFilter` must have at least 1 condition
 - `regex` patterns in `matches_regex` must be valid and have a timeout cap
+
+See [data-model.md — Validation](data-model.md#validation) for the full validation check table and runtime behavior.
 
 ---
 
@@ -526,6 +531,59 @@ For reference, these are reserved names that custom variables cannot use:
 | Name | Output example | Source |
 |---|---|---|
 | `athlete_count` | `3` | Number of athletes on the activity |
+
+---
+
+## Validation Types
+
+C# types returned by the `IRulesetValidator` service. These are not persisted — computed on demand.
+
+```csharp
+namespace StravaEditBotApi.Models.Rules;
+
+/// <summary>
+/// Result of validating a ruleset's filter and effect.
+/// Returned by the validation endpoint and included in create/update responses.
+/// </summary>
+public record RulesetValidationResult(
+    bool IsValid,
+    List<RulesetValidationError> Errors
+);
+
+/// <summary>
+/// A single validation error with a path pointing to the problematic node.
+/// </summary>
+public record RulesetValidationError(
+    /// <summary>
+    /// JSON-path-style pointer to the error location.
+    /// Examples: "filter", "filter.conditions[2].value", "effect.name"
+    /// </summary>
+    string Path,
+
+    /// <summary>
+    /// Machine-readable error code.
+    /// Examples: "filter_required", "incomplete_check", "invalid_operator"
+    /// </summary>
+    string Code,
+
+    /// <summary>
+    /// Human-readable description of the problem.
+    /// </summary>
+    string Message
+);
+```
+
+See [data-model.md — Validation](data-model.md#validation) for the full list of checks and error codes.
+
+---
+
+## Sharing Sanitization
+
+When a ruleset is shared as a template, certain `CheckFilter` values are nulled out to remove user-specific data. The check structure (property + operator) is preserved so recipients understand the ruleset's intent and can fill in their own values.
+
+**Sanitized properties:** `start_location`, `end_location`, `gear_id`
+
+See [data-model.md — Sharing Sanitization](data-model.md#sharing-sanitization) for full details and behavior.
 
 ---
 

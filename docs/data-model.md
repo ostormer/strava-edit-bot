@@ -41,8 +41,9 @@ A user-owned automation rule. When a Strava activity is uploaded, the app evalua
 | `Description` | `string?` | Optional longer description |
 | `Priority` | `int` | Lower = higher priority. Unique per user. Determines evaluation order. |
 | `IsEnabled` | `bool` | Default `true`. Disabled rulesets are skipped during evaluation. |
-| `Filter` | `string` (JSON) | JSON expression tree defining when this rule matches. See [Filter Schema](#filter-schema). |
-| `Effect` | `string` (JSON) | JSON object defining what to change on the activity. See [Effect Schema](#effect-schema). |
+| `IsValid` | `bool` | Default `false`. Recomputed on every save. Only valid rulesets are evaluated at runtime. See [Validation](#validation). |
+| `Filter` | `string?` (JSON) | Nullable. JSON expression tree defining when this rule matches. NULL = not yet configured. See [Filter Schema](#filter-schema). |
+| `Effect` | `string?` (JSON) | Nullable. JSON object defining what to change on the activity. NULL = not yet configured. See [Effect Schema](#effect-schema). |
 | `CreatedFromTemplateId` | `int?` | FK → `RulesetTemplate.Id`, nullable. Tracks origin but no ongoing link. |
 | `CreatedAt` | `DateTime` | UTC timestamp |
 | `UpdatedAt` | `DateTime` | UTC timestamp |
@@ -340,6 +341,68 @@ The full reference is in [filter-effect-types.md](filter-effect-types.md). Summa
 Users can define their own template variables (e.g., `{pace_label}`, `{time_of_day}`) as ordered case lists with filter conditions. These are stored in the `CustomVariable` table. See [filter-effect-types.md](filter-effect-types.md) for full type definitions, examples, and resolution rules.
 
 Variables that cannot be resolved are left as-is in the string.
+
+---
+
+## Validation
+
+Rulesets can be saved in incomplete/invalid states so users don't lose work mid-build. The `IsValid` flag tracks whether a ruleset "compiles" — i.e., whether it can be evaluated at runtime.
+
+### When validation runs
+
+- **On every create/update** (`POST`/`PUT` to `/api/rulesets`) — `IsValid` is recomputed and persisted.
+- **Standalone endpoint** (`POST /api/rulesets/validate`) — accepts a filter + effect body, returns validation result without saving. Used for real-time frontend feedback while editing.
+- **At runtime** — the webhook execution engine skips rulesets where `IsValid == false` (in addition to `IsEnabled == false`).
+
+### What is checked
+
+| Check | Error code | Detail |
+|---|---|---|
+| Filter not null | `filter_required` | A ruleset needs a filter to match against |
+| Filter has conditions | `filter_empty` | An empty `and`/`or` with no children |
+| CheckFilter fields filled | `incomplete_check` | Property, operator, and value must all be non-null |
+| Property is known | `unknown_property` | Must be in the known property list |
+| Operator valid for property | `invalid_operator` | e.g., `gt` on `sport_type` is invalid |
+| Value shape correct | `invalid_value` | e.g., `in` needs array, `gt` needs number |
+| Effect not null | `effect_required` | A ruleset needs at least one effect |
+| Effect has ≥1 field set | `effect_empty` | All fields null = no-op |
+| Template string braces balanced | `unbalanced_braces` | Unclosed `{` or extra `}` |
+| Regex patterns compile | `invalid_regex` | `matches_regex` value must be valid regex |
+| Max nesting depth ≤ 10 | `max_depth_exceeded` | DoS prevention |
+| Referenced custom variables exist | `unknown_variable` | Warning, not error — variable may be created later |
+
+### Validation result types
+
+See [filter-effect-types.md](filter-effect-types.md#validation-types) for C# type definitions (`RulesetValidationResult`, `RulesetValidationError`).
+
+### Draft behavior
+
+A ruleset with `IsValid = false` is effectively a draft:
+- Saved and returned by the API like any other ruleset
+- Visible in the user's ruleset list (frontend can show a "draft" / "incomplete" badge)
+- Skipped during webhook evaluation
+- Validation errors are returned in create/update responses so the frontend can show inline feedback
+
+---
+
+## Sharing Sanitization
+
+When creating a template from a ruleset (`POST /api/rulesets/{id}/share`), the filter is sanitized to remove user-specific data that is either PII or meaningless to the recipient.
+
+### Properties sanitized
+
+| Property | Reason | Action |
+|---|---|---|
+| `start_location` | PII — may reveal home/work address | Set `value` to `null` |
+| `end_location` | PII — may reveal home/work address | Set `value` to `null` |
+| `gear_id` | User-specific — Strava gear IDs are per-user | Set `value` to `null` |
+
+### Behavior
+
+- The sanitizer walks the filter expression tree and nulls out the `value` field on affected `CheckFilter` nodes.
+- The check structure is preserved — recipients see that the ruleset uses a location/gear check and can fill in their own values.
+- The API response from the share endpoint includes a list of sanitized properties so the frontend can inform the user: *"Location and gear values were removed — recipients will need to set their own."*
+- Templates instantiated from a sanitized filter start with `IsValid = false` (because of null values), prompting the user to complete configuration.
 
 ---
 
