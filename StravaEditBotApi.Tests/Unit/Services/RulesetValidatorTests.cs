@@ -347,4 +347,296 @@ public class RulesetValidatorTests
         Assert.That(result.IsValid, Is.True);
         Assert.That(result.Errors, Is.Empty);
     }
+
+    // ========================================================
+    // Validate — OrFilter with non-empty conditions (lines 120-122)
+    // ========================================================
+
+    [Test]
+    public void Validate_OrFilterWithNonEmptyConditions_ValidatesChildren()
+    {
+        var filter = new OrFilter([MakeCheckFilter()]);
+        var effect = MakeValidEffect();
+
+        var result = _sut.Validate(filter, effect);
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [Test]
+    public void Validate_OrFilterWithInvalidChild_ReturnsChildError()
+    {
+        var filter = new OrFilter([new CheckFilter(null, null, null)]);
+        var effect = MakeValidEffect();
+
+        var result = _sut.Validate(filter, effect);
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Path, Does.Contain("conditions[0]"));
+    }
+
+    // ========================================================
+    // Validate — bool property (lines 183-189)
+    // ========================================================
+
+    [TestCase("has_location_data")]
+    [TestCase("has_power_meter")]
+    [TestCase("is_commute")]
+    [TestCase("is_trainer")]
+    [TestCase("is_manual")]
+    [TestCase("is_private")]
+    public void Validate_BoolProperty_WithBoolValue_NoError(string property)
+    {
+        var filter = new AndFilter([new CheckFilter(property, "eq", JsonSerializer.SerializeToElement(true))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [Test]
+    public void Validate_BoolProperty_WithNonBoolValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("is_commute", "eq", JsonSerializer.SerializeToElement("yes"))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+        Assert.That(result.Errors[0].Path, Does.EndWith(".value"));
+    }
+
+    [Test]
+    public void Validate_IsNullOperator_WithBoolValue_NoError()
+    {
+        // is_null is treated as a boolean-value operator regardless of property
+        var filter = new AndFilter([new CheckFilter("gear_id", "is_null", JsonSerializer.SerializeToElement(true))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [Test]
+    public void Validate_IsNullOperator_WithNonBoolValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("gear_id", "is_null", JsonSerializer.SerializeToElement(1))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    // ========================================================
+    // Validate — numeric property (lines 194-200)
+    // ========================================================
+
+    [TestCase("distance_meters")]
+    [TestCase("elapsed_time_seconds")]
+    [TestCase("average_speed")]
+    [TestCase("athlete_count")]
+    public void Validate_NumericProperty_WithNumericValue_NoError(string property)
+    {
+        var filter = new AndFilter([new CheckFilter(property, "gt", JsonSerializer.SerializeToElement(100))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [Test]
+    public void Validate_NumericProperty_WithNonNumericValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("distance_meters", "gt", JsonSerializer.SerializeToElement("far"))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+        Assert.That(result.Errors[0].Path, Does.EndWith(".value"));
+    }
+
+    // ========================================================
+    // Validate — string array property error path (lines 207-210)
+    // ========================================================
+
+    [Test]
+    public void Validate_SportTypeIn_WithNonArrayValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("sport_type", "in", JsonSerializer.SerializeToElement("Run"))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    [Test]
+    public void Validate_DayOfWeekNotIn_WithNonArrayValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("day_of_week", "not_in", JsonSerializer.SerializeToElement("Monday"))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    // ========================================================
+    // Validate — gear_id eq/not_eq (lines 216-222)
+    // ========================================================
+
+    [TestCase("eq")]
+    [TestCase("not_eq")]
+    public void Validate_GearIdEqNotEq_WithStringValue_NoError(string op)
+    {
+        var filter = new AndFilter([new CheckFilter("gear_id", op, JsonSerializer.SerializeToElement("b12345"))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [TestCase("eq")]
+    [TestCase("not_eq")]
+    public void Validate_GearIdEqNotEq_WithNonStringValue_ReturnsInvalidValueError(string op)
+    {
+        var filter = new AndFilter([new CheckFilter("gear_id", op, JsonSerializer.SerializeToElement(123))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    // ========================================================
+    // Validate — int array property (lines 227-233)
+    // ========================================================
+
+    [TestCase("workout_type")]
+    [TestCase("month")]
+    public void Validate_IntArrayProperty_WithArrayValue_NoError(string property)
+    {
+        var filter = new AndFilter([new CheckFilter(property, "in", JsonSerializer.SerializeToElement(new[] { 1, 2 }))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [Test]
+    public void Validate_IntArrayProperty_WithNonArrayValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("workout_type", "in", JsonSerializer.SerializeToElement("1"))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    // ========================================================
+    // Validate — within_radius with non-object value (lines 240-243)
+    // ========================================================
+
+    [Test]
+    public void Validate_WithinRadius_WithNonObjectValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("start_location", "within_radius", JsonSerializer.SerializeToElement("here"))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    [Test]
+    public void Validate_EndLocationWithinRadius_WithNonObjectValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("end_location", "within_radius", JsonSerializer.SerializeToElement(42))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    // ========================================================
+    // Validate — is_empty with non-bool value (lines 271-277)
+    // ========================================================
+
+    [Test]
+    public void Validate_IsEmptyOperator_WithBoolValue_NoError()
+    {
+        // is_empty is only valid for description
+        var filter = new AndFilter([new CheckFilter("description", "is_empty", JsonSerializer.SerializeToElement(false))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [Test]
+    public void Validate_IsEmptyOperator_WithNonBoolValue_ReturnsInvalidValueError()
+    {
+        var filter = new AndFilter([new CheckFilter("description", "is_empty", JsonSerializer.SerializeToElement(1))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    // ========================================================
+    // Validate — string property with non-string value (lines 281-284)
+    // ========================================================
+
+    [TestCase("name", "contains")]
+    [TestCase("name", "starts_with")]
+    [TestCase("description", "contains")]
+    [TestCase("timezone", "eq")]
+    public void Validate_StringProperty_WithNonStringValue_ReturnsInvalidValueError(string property, string op)
+    {
+        var filter = new AndFilter([new CheckFilter(property, op, JsonSerializer.SerializeToElement(123))]);
+
+        var result = _sut.Validate(filter, MakeValidEffect());
+
+        Assert.That(result.IsValid, Is.False);
+        Assert.That(result.Errors[0].Code, Is.EqualTo("invalid_value"));
+    }
+
+    // ========================================================
+    // Validate — HasBalancedBraces closing brace with non-negative depth (line 375)
+    // ========================================================
+
+    [Test]
+    public void Validate_EffectNameWithBalancedBraces_IsValid()
+    {
+        // "{name}" exercises the closing-brace branch without going negative
+        var effect = new RulesetEffect { Name = "{name}" };
+
+        var result = _sut.Validate(MakeValidAndFilter(), effect);
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
+
+    [Test]
+    public void Validate_EffectDescriptionWithBalancedBraces_IsValid()
+    {
+        var effect = new RulesetEffect { Description = "Completed {distance_km} km today" };
+
+        var result = _sut.Validate(MakeValidAndFilter(), effect);
+
+        Assert.That(result.IsValid, Is.True);
+        Assert.That(result.Errors, Is.Empty);
+    }
 }
