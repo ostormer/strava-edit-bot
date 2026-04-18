@@ -129,6 +129,23 @@ using (var scope = app.Services.CreateScope())
     }
 
     await DbSeeder.SeedAsync(db);
+
+    // Seed a dev user so DevBypassAuthenticationHandler's hardcoded NameIdentifier resolves.
+    if (app.Environment.IsDevelopment())
+    {
+        string devUserId = DevBypassAuthenticationHandler.DevUserId;
+        if (!await db.Users.AnyAsync(u => u.Id == devUserId))
+        {
+            db.Users.Add(new AppUser
+            {
+                Id = devUserId,
+                UserName = "dev-user",
+                StravaFirstname = "Dev",
+                StravaLastname = "User"
+            });
+            await db.SaveChangesAsync();
+        }
+    }
 }
 
 // Configure the HTTP request pipeline.

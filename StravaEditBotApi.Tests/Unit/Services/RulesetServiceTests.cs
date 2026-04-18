@@ -508,20 +508,23 @@ public class RulesetServiceTests
     [Test]
     public async Task ReorderAsync_ValidOrder_UpdatesPrioritiesAccordingToPosition()
     {
-        RulesetResponseDto a = await SeedRulesetAsync(name: "A");
-        RulesetResponseDto b = await SeedRulesetAsync(name: "B");
-        RulesetResponseDto c = await SeedRulesetAsync(name: "C");
+        // Transactions not supported by EF InMemory — use SQLite instead.
+        (AppDbContext db, RulesetService sut) = CreateSqliteContext();
+
+        RulesetResponseDto a = await sut.CreateAsync("user1", MakeCreateDto(name: "A"));
+        RulesetResponseDto b = await sut.CreateAsync("user1", MakeCreateDto(name: "B"));
+        RulesetResponseDto c = await sut.CreateAsync("user1", MakeCreateDto(name: "C"));
 
         // Reverse the order
-        List<RulesetResponseDto>? result = await _sut.ReorderAsync(
+        List<RulesetResponseDto>? result = await sut.ReorderAsync(
             "user1",
             new ReorderRulesetsDto([c.Id, b.Id, a.Id]));
 
         Assert.That(result, Is.Not.Null);
 
-        Ruleset? rulesetC = await _db.Rulesets.FindAsync(c.Id);
-        Ruleset? rulesetB = await _db.Rulesets.FindAsync(b.Id);
-        Ruleset? rulesetA = await _db.Rulesets.FindAsync(a.Id);
+        Ruleset? rulesetC = await db.Rulesets.FindAsync(c.Id);
+        Ruleset? rulesetB = await db.Rulesets.FindAsync(b.Id);
+        Ruleset? rulesetA = await db.Rulesets.FindAsync(a.Id);
 
         Assert.That(rulesetC!.Priority, Is.EqualTo(0));
         Assert.That(rulesetB!.Priority, Is.EqualTo(1));

@@ -1,0 +1,23 @@
+meta {
+  name: Share Ruleset
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/rulesets/1/share
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "My Shared Template",
+    "description": "A useful ruleset for morning commuters",
+    "isPublic": false
+  }
+}

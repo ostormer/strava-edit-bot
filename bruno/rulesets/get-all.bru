@@ -1,0 +1,15 @@
+meta {
+  name: Get All Rulesets
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/rulesets
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

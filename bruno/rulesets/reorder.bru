@@ -1,0 +1,21 @@
+meta {
+  name: Reorder Rulesets
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/rulesets/reorder
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "orderedIds": [3, 1, 2]
+  }
+}

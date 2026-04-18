@@ -1,0 +1,15 @@
+meta {
+  name: Get Runs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/runs?page=1&pageSize=50
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,46 @@
+meta {
+  name: Create Variable
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/variables
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "pace_label",
+    "description": "Labels pace as Easy, Moderate, or Fast",
+    "definition": {
+      "name": "pace_label",
+      "cases": [
+        {
+          "condition": {
+            "type": "check",
+            "property": "average_speed",
+            "operator": "lt",
+            "value": 2.5
+          },
+          "output": "Easy"
+        },
+        {
+          "condition": {
+            "type": "check",
+            "property": "average_speed",
+            "operator": "lt",
+            "value": 3.5
+          },
+          "output": "Moderate"
+        }
+      ],
+      "default_value": "Fast"
+    }
+  }
+}

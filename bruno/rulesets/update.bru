@@ -1,0 +1,22 @@
+meta {
+  name: Update Ruleset
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/rulesets/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Ruleset Name",
+    "description": "Updated description"
+  }
+}
