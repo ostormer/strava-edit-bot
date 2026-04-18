@@ -1,0 +1,44 @@
+meta {
+  name: Create Ruleset
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/rulesets
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Morning Commute",
+    "description": "Tag morning bike rides as commutes",
+    "filter": {
+      "type": "and",
+      "conditions": [
+        {
+          "type": "check",
+          "property": "sport_type",
+          "operator": "in",
+          "value": ["Ride"]
+        },
+        {
+          "type": "check",
+          "property": "start_time",
+          "operator": "before",
+          "value": "09:00"
+        }
+      ]
+    },
+    "effect": {
+      "name": "Bike commute to work",
+      "commute": true
+    },
+    "isEnabled": true
+  }
+}

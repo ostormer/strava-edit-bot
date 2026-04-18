@@ -1,0 +1,18 @@
+meta {
+  name: Strava Callback
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/strava/callback
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "code": "your-strava-auth-code",
+    "scope": "read,activity:read_all,activity:write"
+  }
+}

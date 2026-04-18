@@ -1,0 +1,15 @@
+meta {
+  name: Toggle Enabled
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/api/rulesets/1/toggle
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

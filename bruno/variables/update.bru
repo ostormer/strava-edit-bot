@@ -1,0 +1,21 @@
+meta {
+  name: Update Variable
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/variables/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "description": "Updated description"
+  }
+}
