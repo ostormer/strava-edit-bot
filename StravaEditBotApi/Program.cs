@@ -98,6 +98,7 @@ builder.Services.AddHttpClient<IStravaAuthService, StravaAuthService>();
 // Ruleset engine
 builder.Services.AddScoped<IRulesetValidator, RulesetValidator>();
 builder.Services.AddScoped<IFilterSanitizer, FilterSanitizer>();
+builder.Services.AddScoped<IFilterEvaluator, FilterEvaluator>();
 builder.Services.AddScoped<IRulesetService, RulesetService>();
 builder.Services.AddScoped<IRulesetTemplateService, RulesetTemplateService>();
 builder.Services.AddScoped<ICustomVariableService, CustomVariableService>();

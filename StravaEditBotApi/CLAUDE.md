@@ -25,6 +25,7 @@ Services/
   Rulesets/
     IRulesetValidator / RulesetValidator       # validates filter+effect, returns structured errors
     IFilterSanitizer / FilterSanitizer         # nulls out PII/user-specific values for sharing
+    IFilterEvaluator / FilterEvaluator         # evaluates FilterExpression tree against DetailedActivity → bool
     IRulesetService / RulesetService           # ruleset CRUD, priority management, sharing
     IRulesetTemplateService / RulesetTemplateService  # template marketplace, instantiation
     ICustomVariableService / CustomVariableService    # custom variable CRUD
@@ -119,6 +120,18 @@ Collection-type JSON columns (`FieldsChanged`, `BundledVariables`) have explicit
 `IRulesetValidator.Validate(filter, effect)` returns `RulesetValidationResult(IsValid, List<RulesetValidationError>)`. Errors carry JSON-path-style `Path` (e.g., `filter.conditions[2].value`), machine-readable `Code`, human-readable `Message`.
 
 Called on every ruleset create/update (updates `IsValid`). Also exposed at `POST /api/rulesets/validate` for real-time frontend feedback.
+
+### Filter evaluation
+
+`IFilterEvaluator.Evaluate(filter, activity)` returns `bool`. Pure logic — no DB, no I/O. Registry-based dispatch: six static dictionaries map property names to value extractors, grouped by value category (bool, numeric, stringSet, stringId, string, location). Each category has its own operator evaluator method.
+
+- **Adding a property**: one line in the appropriate dictionary.
+- **Adding an operator**: one case in the category's evaluator method.
+- **Adding a category**: new dictionary + evaluator method + wire into `EvaluateCheck`.
+
+Computed properties (`stopped_time_seconds`, `elevation_per_km`) are lambda entries in `_numericProperties`. Zero distance guard: `elevation_per_km` returns `null` when `Distance == 0`, which evaluates to `false`.
+
+String comparisons (`contains`, `starts_with`, `timezone eq`) are case-insensitive (`OrdinalIgnoreCase`). Regex uses 1-second timeout; `RegexMatchTimeoutException` → `false`. Unknown property or operator → `false` (safe default — validator catches these at save time).
 
 ### Sharing sanitization
 
