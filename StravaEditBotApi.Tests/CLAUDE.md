@@ -67,6 +67,23 @@ public void SetUp()
 }
 ```
 
+### Pure logic tests — no DB, no mocks
+
+Services with no I/O dependencies (e.g. `FilterEvaluator`, `RulesetValidator`, `FilterSanitizer`) are tested by constructing them directly:
+
+```csharp
+[SetUp]
+public void SetUp() => _sut = new FilterEvaluator();
+```
+
+Use factory helpers to build test inputs concisely:
+
+```csharp
+private static DetailedActivity MakeActivity(Action<DetailedActivity>? customize = null) { ... }
+private static CheckFilter Check(string property, string op, object value)
+    => new CheckFilter(property, op, JsonSerializer.SerializeToElement(value));
+```
+
 ### NSubstitute quick reference
 
 ```csharp
