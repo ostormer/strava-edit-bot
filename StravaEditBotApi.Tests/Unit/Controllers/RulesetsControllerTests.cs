@@ -544,4 +544,52 @@ public class RulesetsControllerTests
         Assert.That(validationResult.IsValid, Is.True);
         Assert.That(validationResult.Errors, Is.Empty);
     }
+
+    [Test]
+    public void ValidateRuleset_InvalidResult_ReturnsIsValidFalse()
+    {
+        var dto = new ValidateRulesetDto(Filter: null, Effect: null);
+        _validator.Validate(null, null).Returns(new RulesetValidationResult(
+            IsValid: false,
+            Errors: [new RulesetValidationError("filter", "filter_required", "Filter is required.")]
+        ));
+
+        var result = _sut.ValidateRuleset(dto);
+
+        var ok = (OkObjectResult)result;
+        var validationResult = (RulesetValidationResult)ok.Value!;
+        Assert.That(validationResult.IsValid, Is.False);
+        Assert.That(validationResult.Errors, Is.Not.Empty);
+    }
+
+    [Test]
+    public void ValidateRuleset_InvalidResult_ReturnsErrorDetails()
+    {
+        var dto = new ValidateRulesetDto(
+            Filter: new CheckFilter("name", "contains", null),
+            Effect: new RulesetEffect { Name = "{missing_var}" }
+        );
+        var errors = new List<RulesetValidationError>
+        {
+            new("filter.value", "incomplete_check", "Check filter value is required."),
+            new("effect.name", "unresolved_variable", "Template variable 'missing_var' is not defined."),
+        };
+        _validator.Validate(Arg.Any<FilterExpression?>(), Arg.Any<RulesetEffect?>())
+            .Returns(new RulesetValidationResult(IsValid: false, Errors: errors));
+
+        var result = _sut.ValidateRuleset(dto);
+
+        var ok = (OkObjectResult)result;
+        var validationResult = (RulesetValidationResult)ok.Value!;
+        Assert.That(validationResult.Errors, Has.Count.EqualTo(2));
+        Assert.Multiple(() =>
+        {
+            Assert.That(validationResult.Errors[0].Path, Is.EqualTo("filter.value"));
+            Assert.That(validationResult.Errors[0].Code, Is.EqualTo("incomplete_check"));
+            Assert.That(validationResult.Errors[0].Message, Is.EqualTo("Check filter value is required."));
+            Assert.That(validationResult.Errors[1].Path, Is.EqualTo("effect.name"));
+            Assert.That(validationResult.Errors[1].Code, Is.EqualTo("unresolved_variable"));
+            Assert.That(validationResult.Errors[1].Message, Is.EqualTo("Template variable 'missing_var' is not defined."));
+        });
+    }
 }
