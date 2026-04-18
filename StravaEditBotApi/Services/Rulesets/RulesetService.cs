@@ -176,12 +176,25 @@ public class RulesetService(
 
         Dictionary<int, Ruleset> byId = rulesets.ToDictionary(r => r.Id);
 
+        // Two-phase save to avoid unique index (UserId, Priority) violations.
+        // Phase 1: shift all priorities to negative temps so no two rows collide.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        for (int i = 0; i < dto.OrderedIds.Count; i++)
+        {
+            byId[dto.OrderedIds[i]].Priority = -(i + 1);
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        // Phase 2: set final priorities.
         for (int i = 0; i < dto.OrderedIds.Count; i++)
         {
             byId[dto.OrderedIds[i]].Priority = i;
         }
 
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
         return rulesets
             .OrderBy(r => r.Priority)

@@ -14,9 +14,15 @@ public class DevBypassAuthenticationHandler(
     ILoggerFactory logger,
     UrlEncoder encoder) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
+    public const string DevUserId = "dev-user-00000000-0000-0000-0000-000000000000";
+
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var claims = new[] { new Claim(ClaimTypes.Name, "dev-user") };
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.Name, "dev-user"),
+            new Claim(ClaimTypes.NameIdentifier, DevUserId)
+        };
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name);
         return Task.FromResult(AuthenticateResult.Success(ticket));
